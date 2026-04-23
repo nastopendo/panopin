@@ -9,6 +9,7 @@ Open-source aplikacja typu GeoGuessr oparta o własne panoramy 360° z GPS. Misj
 ## Stack (zatwierdzony)
 
 - **Next.js 16 + React 19** (App Router, Turbopack) — ⚠️ to Next 16, nie 15 jak w dokumentacji ogólnej. Przed pisaniem nowych API/konwencji sprawdź `node_modules/next/dist/docs/`.
+  - `middleware.ts` → przemianowany na **`proxy.ts`**, eksport `proxy()` zamiast `middleware()`. Plik `middleware.ts` nie działa — daje warning i jest ignorowany.
 - **TypeScript** (strict) — bez `any`, zod przy granicach I/O
 - **Tailwind v4** + shadcn/ui (do zainstalowania)
 - **Supabase** — Postgres + Auth (anonimowe sesje + OAuth Google) + RLS
