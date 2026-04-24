@@ -32,12 +32,23 @@ export default function LoginPage() {
   }
 
   async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${location.origin}/auth/callback`,
-      },
-    });
+    setLoading(true);
+    setError(null);
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.user.is_anonymous) {
+      // Preserve rounds played as guest by linking Google to the existing anonymous account
+      const { error } = await supabase.auth.linkIdentity({
+        provider: "google",
+        options: { redirectTo: `${location.origin}/auth/callback` },
+      });
+      if (error) { setError(error.message); setLoading(false); }
+    } else {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${location.origin}/auth/callback` },
+      });
+    }
   }
 
   if (sent) {

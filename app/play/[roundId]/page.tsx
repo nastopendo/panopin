@@ -74,6 +74,7 @@ export default function RoundPage() {
   const [results, setResults] = useState<StepResult[]>([]);
   const [currentResult, setCurrentResult] = useState<StepResult | null>(null);
   const [totalScore, setTotalScore] = useState<number | null>(null);
+  const [topPercent, setTopPercent] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const stepStartRef = useRef<number>(0);
@@ -152,6 +153,7 @@ export default function RoundPage() {
         const res = await fetch(`/api/rounds/${roundId}/finish`, { method: "POST" });
         const data = await res.json();
         setTotalScore(data.totalScore);
+        setTopPercent(data.topPercent ?? null);
       } catch {
         const localTotal = results.reduce((s, r) => s + r.score, 0) + (currentResult?.score ?? 0);
         setTotalScore(localTotal);
@@ -206,6 +208,11 @@ export default function RoundPage() {
             <h1 className="text-2xl font-bold mb-1">Koniec rundy!</h1>
             <div className="text-6xl font-bold">{totalScore?.toLocaleString("pl")}</div>
             <div className="text-zinc-400 text-sm mt-1">punktów łącznie</div>
+            {topPercent !== null && (
+              <div className="mt-2 text-sm font-medium text-emerald-400">
+                Jesteś w top {topPercent}% graczy!
+              </div>
+            )}
           </div>
 
           {/* Results map */}
@@ -243,12 +250,18 @@ export default function RoundPage() {
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center flex-wrap">
             <Link
               href="/play"
               className="px-6 py-3 bg-white text-zinc-900 rounded-xl font-semibold hover:bg-zinc-100 transition-colors"
             >
               Zagraj ponownie
+            </Link>
+            <Link
+              href="/leaderboard"
+              className="px-6 py-3 border border-zinc-700 text-zinc-400 rounded-xl hover:border-zinc-500 transition-colors"
+            >
+              Ranking
             </Link>
             <Link
               href="/"
