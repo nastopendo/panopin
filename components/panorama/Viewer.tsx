@@ -48,10 +48,19 @@ export default function PanoramaViewer({ equirectUrl, tilesManifest, className }
           "@photo-sphere-viewer/cubemap-tiles-adapter"
         );
         config.adapter = CubemapTilesAdapter;
+        const base = `${tilesManifest!.baseUrl}/tiles/${tilesManifest!.photoId}`;
         config.panorama = {
+          baseUrl: {
+            front:  `${base}/front/0/0_0.jpg`,
+            back:   `${base}/back/0/0_0.jpg`,
+            left:   `${base}/left/0/0_0.jpg`,
+            right:  `${base}/right/0/0_0.jpg`,
+            top:    `${base}/top/0/0_0.jpg`,
+            bottom: `${base}/bottom/0/0_0.jpg`,
+          },
           levels: tilesManifest.levels,
           tileUrl: (face: string, col: number, row: number, level: number) =>
-            `${tilesManifest!.baseUrl}/tiles/${tilesManifest!.photoId}/${face}/${level}/${row}_${col}.jpg`,
+            `${base}/${face}/${level}/${row}_${col}.jpg`,
         };
       } else {
         config.panorama = equirectUrl;
@@ -60,13 +69,7 @@ export default function PanoramaViewer({ equirectUrl, tilesManifest, className }
       const viewer = new Viewer(config);
 
       viewer.addEventListener("panorama-error", (e) => {
-        console.error("[PanoramaViewer] panorama-error:", e);
-      });
-      viewer.addEventListener("panorama-loaded", () => {
-        console.log("[PanoramaViewer] panorama-loaded ✓");
-      });
-      viewer.addEventListener("ready", () => {
-        console.log("[PanoramaViewer] ready ✓");
+        console.error("[PanoramaViewer]", e);
       });
 
       viewerRef.current = viewer;

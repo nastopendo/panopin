@@ -12,37 +12,47 @@ export interface GuessResult {
 interface Props {
   onConfirm: (guess: GuessResult) => void;
   disabled?: boolean;
-  /** Highlight actual location after round ends */
+  /** Actual location revealed after guess — triggers green pin + line + fitBounds */
   actualLocation?: GuessResult;
+  /** Increment each step to clear markers and line from the previous round */
+  stepKey?: number;
   className?: string;
 }
 
-export default function GuessMap({ onConfirm, disabled, actualLocation, className }: Props) {
+export default function GuessMap({ onConfirm, disabled, actualLocation, stepKey, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const markerRef = useRef<maplibregl.Marker | null>(null);
+  const guessMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const actualMarkerRef = useRef<maplibregl.Marker | null>(null);
+  // Use a ref for disabled so the click handler never captures a stale value
+  const disabledRef = useRef(disabled);
   const [pin, setPin] = useState<GuessResult | null>(null);
 
+  useEffect(() => {
+    disabledRef.current = disabled;
+  }, [disabled]);
+
+  // Initialize map once
   useEffect(() => {
     if (!containerRef.current) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: "https://tiles.openfreemap.org/styles/liberty",
-      center: [19.5, 52.0], // Poland
+      center: [19.5, 52.0],
       zoom: 5,
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     map.on("click", (e) => {
-      if (disabled) return;
+      if (disabledRef.current) return;
       const { lat, lng } = e.lngLat;
 
-      if (markerRef.current) {
-        markerRef.current.setLngLat([lng, lat]);
+      if (guessMarkerRef.current) {
+        guessMarkerRef.current.setLngLat([lng, lat]);
       } else {
-        markerRef.current = new maplibregl.Marker({ color: "#ef4444" })
+        guessMarkerRef.current = new maplibregl.Marker({ color: "#ef4444" })
           .setLngLat([lng, lat])
           .addTo(map);
       }
@@ -54,21 +64,46 @@ export default function GuessMap({ onConfirm, disabled, actualLocation, classNam
     return () => {
       map.remove();
       mapRef.current = null;
-      markerRef.current = null;
+      guessMarkerRef.current = null;
+      actualMarkerRef.current = null;
     };
   }, []);
 
-  // Show actual location marker after guess
+  // Reset state between steps
   useEffect(() => {
-    if (!actualLocation || !mapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
 
-    new maplibregl.Marker({ color: "#22c55e" })
+    guessMarkerRef.current?.remove();
+    guessMarkerRef.current = null;
+
+    actualMarkerRef.current?.remove();
+    actualMarkerRef.current = null;
+
+    if (map.getLayer("guess-line")) map.removeLayer("guess-line");
+    if (map.getSource("guess-line")) map.removeSource("guess-line");
+
+    setPin(null);
+  }, [stepKey]);
+
+  // Show actual location + line + fit bounds after guess
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!actualLocation || !map) return;
+
+    // Green marker for actual location
+    actualMarkerRef.current?.remove();
+    actualMarkerRef.current = new maplibregl.Marker({ color: "#22c55e" })
       .setLngLat([actualLocation.lng, actualLocation.lat])
-      .addTo(mapRef.current);
+      .addTo(map);
 
-    // Draw line between guess and actual
-    if (pin && mapRef.current.getSource("guess-line") === undefined) {
-      mapRef.current.addSource("guess-line", {
+    // Line from guess to actual — read position from the live marker (never stale)
+    const gPos = guessMarkerRef.current?.getLngLat();
+    if (gPos) {
+      if (map.getLayer("guess-line")) map.removeLayer("guess-line");
+      if (map.getSource("guess-line")) map.removeSource("guess-line");
+
+      map.addSource("guess-line", {
         type: "geojson",
         data: {
           type: "Feature",
@@ -76,20 +111,26 @@ export default function GuessMap({ onConfirm, disabled, actualLocation, classNam
           geometry: {
             type: "LineString",
             coordinates: [
-              [pin.lng, pin.lat],
+              [gPos.lng, gPos.lat],
               [actualLocation.lng, actualLocation.lat],
             ],
           },
         },
       });
-      mapRef.current.addLayer({
+      map.addLayer({
         id: "guess-line",
         type: "line",
         source: "guess-line",
         paint: { "line-color": "#94a3b8", "line-width": 2, "line-dasharray": [3, 3] },
       });
+
+      // Fit map to show both pins
+      const bounds = new maplibregl.LngLatBounds()
+        .extend([gPos.lng, gPos.lat])
+        .extend([actualLocation.lng, actualLocation.lat]);
+      map.fitBounds(bounds, { padding: 80, maxZoom: 13, duration: 1200 });
     }
-  }, [actualLocation, pin]);
+  }, [actualLocation]);
 
   return (
     <div className={`relative ${className ?? "w-full h-full"}`}>

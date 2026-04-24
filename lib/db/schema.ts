@@ -80,6 +80,7 @@ export const rounds = pgTable("rounds", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => profiles.id),
   anonSessionId: text("anon_session_id"),
+  photoIds: jsonb("photo_ids").$type<string[]>().notNull(),
   startedAt: timestamptz("started_at").defaultNow().notNull(),
   completedAt: timestamptz("completed_at"),
   totalScore: integer("total_score"),

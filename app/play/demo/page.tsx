@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import Link from "next/link";
 import type { GuessResult } from "@/components/map/GuessMap";
 
 // Browser-only components — disable SSR
@@ -76,12 +77,12 @@ export default function DemoPage() {
               {distance?.toLocaleString("pl")} m
             </div>
             <div className="text-zinc-400 text-sm mb-4">od rzeczywistej lokalizacji</div>
-            <a
+            <Link
               href="/play/demo"
               className="block w-full bg-zinc-100 text-zinc-900 rounded-xl py-2.5 text-sm font-semibold hover:bg-white transition-colors"
             >
               Zagraj ponownie
-            </a>
+            </Link>
           </div>
         </div>
       )}

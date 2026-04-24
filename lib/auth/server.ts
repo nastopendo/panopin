@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { db } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -20,6 +23,26 @@ export async function createSupabaseServerClient() {
       },
     },
   );
+}
+
+export async function getCurrentUser() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
+export async function requireAdmin() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const [profile] = await db
+    .select({ role: profiles.role })
+    .from(profiles)
+    .where(eq(profiles.id, user.id))
+    .limit(1);
+
+  if (profile?.role !== "admin") return null;
+  return user;
 }
 
 export async function createSupabaseAdminClient() {

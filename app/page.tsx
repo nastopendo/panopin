@@ -9,10 +9,10 @@ export default function Home() {
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
-          href="/play/demo"
+          href="/play"
           className="px-6 py-3 bg-white text-zinc-900 rounded-xl font-semibold hover:bg-zinc-100 transition-colors text-center"
         >
-          Zagraj (demo)
+          Zagraj
         </Link>
         <Link
           href="/login"

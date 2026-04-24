@@ -1,0 +1,1 @@
+ALTER TABLE "rounds" ADD COLUMN "photo_ids" jsonb NOT NULL;
