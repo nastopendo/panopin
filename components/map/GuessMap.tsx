@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { getMapStyleSpec, type MapStyle } from "@/lib/map-styles";
 
 export interface GuessResult {
   lat: number;
@@ -16,10 +17,25 @@ interface Props {
   actualLocation?: GuessResult;
   /** Increment each step to clear markers and line from the previous round */
   stepKey?: number;
+  /** Default map center [lng, lat] */
+  initialCenter?: [number, number];
+  /** Default zoom level */
+  initialZoom?: number;
+  /** Map visual style */
+  mapStyle?: MapStyle;
   className?: string;
 }
 
-export default function GuessMap({ onConfirm, disabled, actualLocation, stepKey, className }: Props) {
+export default function GuessMap({
+  onConfirm,
+  disabled,
+  actualLocation,
+  stepKey,
+  initialCenter = [19.5, 52.0],
+  initialZoom = 5,
+  mapStyle = "street",
+  className,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const guessMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -38,9 +54,9 @@ export default function GuessMap({ onConfirm, disabled, actualLocation, stepKey,
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: "https://tiles.openfreemap.org/styles/liberty",
-      center: [19.5, 52.0],
-      zoom: 5,
+      style: getMapStyleSpec(mapStyle),
+      center: initialCenter,
+      zoom: initialZoom,
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");

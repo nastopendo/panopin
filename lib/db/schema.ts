@@ -90,6 +90,15 @@ export const rounds = pgTable("rounds", {
   createdAt: timestamptz("created_at").defaultNow().notNull(),
 });
 
+export const mapSettings = pgTable("map_settings", {
+  id: integer("id").primaryKey(), // singleton — always id=1
+  centerLat: doublePrecision("center_lat").notNull().default(52.0),
+  centerLng: doublePrecision("center_lng").notNull().default(19.5),
+  defaultZoom: doublePrecision("default_zoom").notNull().default(5),
+  mapStyle: text("map_style").$type<"street" | "satellite">().notNull().default("street"),
+  updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+});
+
 export const guesses = pgTable("guesses", {
   id: uuid("id").primaryKey().defaultRandom(),
   roundId: uuid("round_id")

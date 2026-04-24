@@ -30,6 +30,9 @@ export default async function AdminLayout({
             <Link href="/admin/tags" className="text-zinc-600 hover:text-zinc-900">
               Tagi
             </Link>
+            <Link href="/admin/map-settings" className="text-zinc-600 hover:text-zinc-900">
+              Mapa
+            </Link>
           </nav>
         </div>
         <div className="text-xs text-zinc-500">{admin.email}</div>

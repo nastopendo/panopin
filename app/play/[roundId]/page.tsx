@@ -6,9 +6,11 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { TileManifest } from "@/components/panorama/Viewer";
 import type { GuessResult } from "@/components/map/GuessMap";
+import type { MapStyle } from "@/lib/map-styles";
 
 const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), { ssr: false });
 const GuessMap = dynamic(() => import("@/components/map/GuessMap"), { ssr: false });
+const ResultsMap = dynamic(() => import("@/components/map/ResultsMap"), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,7 +32,21 @@ interface StepResult {
   timeBonus: number;
 }
 
+interface MapSettings {
+  centerLat: number;
+  centerLng: number;
+  defaultZoom: number;
+  mapStyle: MapStyle;
+}
+
 type Phase = "loading" | "error" | "playing" | "revealed" | "finished";
+
+const DEFAULT_MAP_SETTINGS: MapSettings = {
+  centerLat: 52.0,
+  centerLng: 19.5,
+  defaultZoom: 5,
+  mapStyle: "street",
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,7 +69,8 @@ export default function RoundPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const [photos, setPhotos] = useState<RoundPhoto[]>([]);
-  const [step, setStep] = useState(0); // 0-based index
+  const [mapSettings, setMapSettings] = useState<MapSettings>(DEFAULT_MAP_SETTINGS);
+  const [step, setStep] = useState(0);
   const [results, setResults] = useState<StepResult[]>([]);
   const [currentResult, setCurrentResult] = useState<StepResult | null>(null);
   const [totalScore, setTotalScore] = useState<number | null>(null);
@@ -61,13 +78,21 @@ export default function RoundPage() {
 
   const stepStartRef = useRef<number>(0);
 
-  // Load round on mount
+  // Load round + map settings in parallel
   useEffect(() => {
-    fetch(`/api/rounds/${roundId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        setPhotos(data.photos);
+    Promise.all([
+      fetch(`/api/rounds/${roundId}`).then((r) => r.json()),
+      fetch("/api/map-settings").then((r) => r.json()),
+    ])
+      .then(([roundData, settingsData]) => {
+        if (roundData.error) throw new Error(roundData.error);
+        setPhotos(roundData.photos);
+        setMapSettings({
+          centerLat: settingsData.centerLat ?? DEFAULT_MAP_SETTINGS.centerLat,
+          centerLng: settingsData.centerLng ?? DEFAULT_MAP_SETTINGS.centerLng,
+          defaultZoom: settingsData.defaultZoom ?? DEFAULT_MAP_SETTINGS.defaultZoom,
+          mapStyle: settingsData.mapStyle ?? DEFAULT_MAP_SETTINGS.mapStyle,
+        });
         stepStartRef.current = Date.now();
         setPhase("playing");
       })
@@ -123,13 +148,11 @@ export default function RoundPage() {
 
   async function handleNext() {
     if (step + 1 >= photos.length) {
-      // Finish the round
       try {
         const res = await fetch(`/api/rounds/${roundId}/finish`, { method: "POST" });
         const data = await res.json();
         setTotalScore(data.totalScore);
       } catch {
-        // Use local sum as fallback
         const localTotal = results.reduce((s, r) => s + r.score, 0) + (currentResult?.score ?? 0);
         setTotalScore(localTotal);
       }
@@ -175,43 +198,65 @@ export default function RoundPage() {
   }
 
   if (phase === "finished") {
-    const allResults = results;
     return (
-      <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center gap-6 p-6">
-        <h1 className="text-3xl font-bold">Koniec rundy!</h1>
-        <div className="text-6xl font-bold text-white">{totalScore?.toLocaleString("pl")}</div>
-        <div className="text-zinc-400 text-sm">punktów łącznie</div>
+      <div className="min-h-screen bg-zinc-950 text-white overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-8 flex flex-col gap-6">
+          {/* Score header */}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-1">Koniec rundy!</h1>
+            <div className="text-6xl font-bold">{totalScore?.toLocaleString("pl")}</div>
+            <div className="text-zinc-400 text-sm mt-1">punktów łącznie</div>
+          </div>
 
-        <div className="w-full max-w-sm space-y-2">
-          {allResults.map((r, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3"
-            >
-              <span className="text-zinc-400 text-sm">Panorama {i + 1}</span>
-              <div className="text-right">
-                <span className={`font-semibold ${scoreColor(r.score)}`}>
-                  {r.score.toLocaleString("pl")} pkt
-                </span>
-                <div className="text-zinc-500 text-xs">{formatDistance(r.distanceM)}</div>
+          {/* Results map */}
+          <div className="rounded-2xl overflow-hidden border border-zinc-800 h-[360px]">
+            <ResultsMap
+              results={results}
+              mapStyle={mapSettings.mapStyle}
+              className="w-full h-full"
+            />
+          </div>
+
+          {/* Per-step results */}
+          <div className="space-y-2">
+            {results.map((r, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3"
+              >
+                <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold shrink-0">
+                  {i + 1}
+                </div>
+                <div className="flex-1 text-sm text-zinc-400">
+                  {formatDistance(r.distanceM)} od celu
+                </div>
+                <div className="text-right">
+                  <span className={`font-semibold ${scoreColor(r.score)}`}>
+                    {r.score.toLocaleString("pl")} pkt
+                  </span>
+                  {r.timeBonus > 0 && (
+                    <div className="text-zinc-600 text-xs">+{r.timeBonus} bonus czas</div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="flex gap-3">
-          <Link
-            href="/play"
-            className="px-6 py-3 bg-white text-zinc-900 rounded-xl font-semibold hover:bg-zinc-100 transition-colors"
-          >
-            Zagraj ponownie
-          </Link>
-          <Link
-            href="/"
-            className="px-6 py-3 border border-zinc-700 text-zinc-400 rounded-xl hover:border-zinc-500 transition-colors"
-          >
-            Strona główna
-          </Link>
+          {/* Buttons */}
+          <div className="flex gap-3 justify-center">
+            <Link
+              href="/play"
+              className="px-6 py-3 bg-white text-zinc-900 rounded-xl font-semibold hover:bg-zinc-100 transition-colors"
+            >
+              Zagraj ponownie
+            </Link>
+            <Link
+              href="/"
+              className="px-6 py-3 border border-zinc-700 text-zinc-400 rounded-xl hover:border-zinc-500 transition-colors"
+            >
+              Strona główna
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -251,6 +296,9 @@ export default function RoundPage() {
                 : undefined
             }
             stepKey={step}
+            initialCenter={[mapSettings.centerLng, mapSettings.centerLat]}
+            initialZoom={mapSettings.defaultZoom}
+            mapStyle={mapSettings.mapStyle}
             className="w-full h-full"
           />
 
@@ -292,11 +340,7 @@ function StepDots({
         <div
           key={i}
           className={`w-2 h-2 rounded-full ${
-            i < done
-              ? "bg-emerald-500"
-              : i === current
-              ? "bg-white"
-              : "bg-zinc-600"
+            i < done ? "bg-emerald-500" : i === current ? "bg-white" : "bg-zinc-600"
           }`}
         />
       ))}
