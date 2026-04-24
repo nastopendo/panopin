@@ -1,15 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/auth/client";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createSupabaseBrowserClient();
+  const redirectAfterAuth = searchParams.get("redirect");
+  const getAuthCallbackUrl = () => {
+    const authCallbackUrl = new URL("/auth/callback", window.location.origin);
+    if (redirectAfterAuth) {
+      authCallbackUrl.searchParams.set("next", redirectAfterAuth);
+    }
+    return authCallbackUrl.toString();
+  };
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
@@ -19,7 +29,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
+        emailRedirectTo: getAuthCallbackUrl(),
       },
     });
 
@@ -40,13 +50,13 @@ export default function LoginPage() {
       // Preserve rounds played as guest by linking Google to the existing anonymous account
       const { error } = await supabase.auth.linkIdentity({
         provider: "google",
-        options: { redirectTo: `${location.origin}/auth/callback` },
+        options: { redirectTo: getAuthCallbackUrl() },
       });
       if (error) { setError(error.message); setLoading(false); }
     } else {
       await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${location.origin}/auth/callback` },
+        options: { redirectTo: getAuthCallbackUrl() },
       });
     }
   }
