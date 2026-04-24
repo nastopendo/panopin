@@ -57,9 +57,19 @@ export default function GuessMap({
       style: getMapStyleSpec(mapStyle),
       center: initialCenter,
       zoom: initialZoom,
+      attributionControl: false,
     });
 
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+
+    map.on("load", () => {
+      const el = map.getContainer().querySelector<HTMLDetailsElement>(".maplibregl-ctrl-attrib");
+      if (el) {
+        el.removeAttribute("open");
+        el.classList.remove("maplibregl-compact-show");
+      }
+    });
 
     map.on("click", (e) => {
       if (disabledRef.current) return;

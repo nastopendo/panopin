@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide attribution text when MapLibre auto-expands on wide screens.
+   After map load, JS removes maplibregl-compact-show so user can toggle normally. */
+.maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  display: none;
+}

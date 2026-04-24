@@ -44,11 +44,19 @@ export default function ResultsMap({ results, mapStyle = "street", className }: 
       center: [19.5, 52.0],
       zoom: 5,
       interactive: true,
+      attributionControl: false,
     });
 
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     map.on("load", () => {
+      const el = map.getContainer().querySelector<HTMLDetailsElement>(".maplibregl-ctrl-attrib");
+      if (el) {
+        el.removeAttribute("open");
+        el.classList.remove("maplibregl-compact-show");
+      }
+
       // Lines connecting guess ↔ actual for every step
       map.addSource("result-lines", {
         type: "geojson",

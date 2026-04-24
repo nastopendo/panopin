@@ -11,6 +11,7 @@ import type { MapStyle } from "@/lib/map-styles";
 const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), { ssr: false });
 const GuessMap = dynamic(() => import("@/components/map/GuessMap"), { ssr: false });
 const ResultsMap = dynamic(() => import("@/components/map/ResultsMap"), { ssr: false });
+const ShareButton = dynamic(() => import("@/components/ShareButton").then((m) => ({ default: m.ShareButton })), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -257,17 +258,15 @@ export default function RoundPage() {
             >
               Zagraj ponownie
             </Link>
+            <ShareButton
+              url={`${typeof window !== "undefined" ? window.location.origin : ""}/results/${roundId}`}
+              score={totalScore ?? 0}
+            />
             <Link
               href="/leaderboard"
               className="px-6 py-3 border border-zinc-700 text-zinc-400 rounded-xl hover:border-zinc-500 transition-colors"
             >
               Ranking
-            </Link>
-            <Link
-              href="/"
-              className="px-6 py-3 border border-zinc-700 text-zinc-400 rounded-xl hover:border-zinc-500 transition-colors"
-            >
-              Strona główna
             </Link>
           </div>
         </div>
