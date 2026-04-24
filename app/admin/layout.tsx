@@ -11,7 +11,7 @@ export default async function AdminLayout({
   if (!admin) redirect("/");
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50">
+    <div className="min-h-screen flex flex-col bg-zinc-50 text-zinc-900">
       <header className="bg-white border-b border-zinc-200 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="font-bold text-zinc-900">

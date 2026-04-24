@@ -53,7 +53,7 @@ export default function LoginPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 text-zinc-900">
         <div className="bg-white rounded-2xl shadow p-8 w-full max-w-sm text-center space-y-3">
           <div className="text-4xl">📬</div>
           <h2 className="text-lg font-semibold">Sprawdź skrzynkę</h2>
