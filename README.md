@@ -1,60 +1,60 @@
 # Panopin
 
-Open-source aplikacja w stylu GeoGuessr oparta o własne panoramy 360° z GPS.
-Gracze odgadują lokalizacje zdjęć na mapie — im bliżej, tym więcej punktów.
+Open-source GeoGuessr-style game built around custom 360deg panoramas with GPS data.
+Players guess each photo location on the map - the closer the guess, the more points they get.
 
 ## Stack
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript** + **Tailwind v4**
-- **Supabase** — Postgres, Auth (anonimowe sesje + Google OAuth), RLS
-- **Drizzle ORM** — schema w `lib/db/schema.ts`
-- **Cloudflare R2** — storage kafelków (S3-compatible, public read)
+- **Supabase** — Postgres, Auth (anonymous sessions + Google OAuth), RLS
+- **Drizzle ORM** — schema in `lib/db/schema.ts`
+- **Cloudflare R2** — tile storage (S3-compatible, public read)
 - **Vercel** — hosting
 
-## Self-host: szybki start
+## Self-host: quick start
 
-### 1. Wymagania
+### 1. Requirements
 
 - Node.js 20+, pnpm 9+
-- Konto [Supabase](https://supabase.com) (free tier wystarczy)
-- Konto [Cloudflare R2](https://developers.cloudflare.com/r2/) (free tier: 10 GB / 10 M req/mies.)
+- A [Supabase](https://supabase.com) account (free tier is enough)
+- A [Cloudflare R2](https://developers.cloudflare.com/r2/) account (free tier: 10 GB / 10 M requests/month)
 
-### 2. Sklonuj i zainstaluj
+### 2. Clone and install
 
 ```bash
-git clone https://github.com/twoj-nick/panopin.git
+git clone https://github.com/your-username/panopin.git
 cd panopin
 pnpm install
 ```
 
-### 3. Supabase — setup
+### 3. Supabase setup
 
-1. Utwórz nowy projekt w Supabase
-2. Uruchom migracje w kolejności w **SQL Editor**:
+1. Create a new Supabase project
+2. Run migrations in this order in **SQL Editor**:
    - `supabase/migrations/001_rls_policies.sql`
    - `drizzle/migrations/0000_amusing_gladiator.sql`
    - `drizzle/migrations/0001_natural_ultimo.sql`
    - `drizzle/migrations/0002_little_doomsday.sql`
-3. Włącz anonimowe logowanie: **Authentication → Providers → Anonymous**
-4. (Opcjonalnie) Dodaj Google OAuth: **Authentication → Providers → Google** — wymagany `Client ID` i `Client Secret`
-5. Ustaw swojego użytkownika jako admina:
+3. Enable anonymous sign-in: **Authentication -> Providers -> Anonymous**
+4. (Optional) Add Google OAuth: **Authentication -> Providers -> Google** - requires `Client ID` and `Client Secret`
+5. Set your user as admin:
    ```sql
-   UPDATE profiles SET role = 'admin' WHERE id = '<twoje-auth-uid>';
+   UPDATE profiles SET role = 'admin' WHERE id = '<your-auth-uid>';
    ```
 
-### 4. Cloudflare R2 — setup
+### 4. Cloudflare R2 setup
 
-1. Utwórz bucket `panopin` (lub inną nazwę)
-2. Włącz **Public access** na folderze `tiles/`
-3. Skonfiguruj CORS (dozwól `PUT` z domeny aplikacji):
+1. Create bucket `panopin` (or any name you prefer)
+2. Enable **Public access** for the `tiles/` folder
+3. Configure CORS (allow `PUT` from your app domains):
    ```json
-   [{"AllowedOrigins":["http://localhost:3000","https://twoja-domena.pl"],"AllowedMethods":["GET","PUT"],"AllowedHeaders":["*"]}]
+   [{"AllowedOrigins":["http://localhost:3000","https://your-domain.com"],"AllowedMethods":["GET","PUT"],"AllowedHeaders":["*"]}]
    ```
-4. Wygeneruj API token z uprawnieniami `Object Read & Write`
+4. Generate an API token with `Object Read & Write` permissions
 
-### 5. Zmienne środowiskowe
+### 5. Environment variables
 
-Utwórz plik `.env.local`:
+Create a `.env.local` file:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
@@ -71,33 +71,33 @@ R2_PUBLIC_BASE_URL=https://pub-xxxx.r2.dev
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-### 6. Uruchom lokalnie
+### 6. Run locally
 
 ```bash
 pnpm dev
 ```
 
-Otwórz [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
-### 7. Dodaj pierwsze zdjęcie
+### 7. Upload your first photo
 
-1. Zaloguj się jako admin (Google lub magic link)
-2. Wejdź na `/admin/upload`
-3. Wrzuć zdjęcie 360° z GPS (EXIF z lat/lng)
-4. Poczekaj na wygenerowanie kafelków (~10–30s)
-5. Zagraj na `/play` 🎉
+1. Sign in as admin (Google or magic link)
+2. Go to `/admin/upload`
+3. Upload a 360deg photo with GPS metadata (EXIF lat/lng)
+4. Wait for tile generation (~10-30s)
+5. Play at `/play` 🎉
 
-## Komendy
+## Commands
 
 ```bash
-pnpm dev          # serwer deweloperski (Turbopack)
-pnpm build        # build produkcyjny
-pnpm test:run     # testy jednostkowe (vitest)
+pnpm dev          # development server (Turbopack)
+pnpm build        # production build
+pnpm test:run     # unit tests (vitest)
 pnpm lint         # ESLint
-pnpm db:generate  # generuj migrację SQL z aktualnego schema
-pnpm db:studio    # Drizzle Studio — przeglądarka DB
+pnpm db:generate  # generate SQL migration from current schema
+pnpm db:studio    # Drizzle Studio - database browser
 ```
 
-## Licencja
+## License
 
-MIT — szczegóły w [LICENSE](./LICENSE).
+MIT - see [LICENSE](./LICENSE) for details.

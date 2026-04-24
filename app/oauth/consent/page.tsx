@@ -28,7 +28,7 @@ export default function OAuthConsentPage() {
 
     async function loadAuthorization() {
       if (!authorizationId) {
-        setError("Brak authorization_id w URL.");
+        setError("Missing authorization_id in the URL.");
         setLoading(false);
         return;
       }
@@ -51,7 +51,7 @@ export default function OAuthConsentPage() {
       if (cancelled) return;
 
       if (authError || !data) {
-        setError(authError?.message ?? "Nieprawidlowe zadanie autoryzacji.");
+        setError(authError?.message ?? "Invalid authorization request.");
       } else {
         setDetails(data as AuthorizationDetails);
       }
@@ -80,7 +80,7 @@ export default function OAuthConsentPage() {
 
     if (decisionError || !data?.redirect_url) {
       setError(
-        decisionError?.message ?? "Nie udalo sie zakonczyc autoryzacji.",
+        decisionError?.message ?? "Failed to complete authorization.",
       );
       setSubmitting(null);
       return;
@@ -95,13 +95,13 @@ export default function OAuthConsentPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">OAuth consent</h1>
           <p className="text-sm text-zinc-500">
-            Potwierdz dostep aplikacji zewnetrznej do Twojego konta.
+            Confirm access for a third-party application to your account.
           </p>
         </div>
 
         {loading ? (
           <p className="text-sm text-zinc-500">
-            Ladowanie szczegolow autoryzacji...
+            Loading authorization details...
           </p>
         ) : error ? (
           <p className="text-sm text-red-600">{error}</p>
@@ -136,7 +136,7 @@ export default function OAuthConsentPage() {
                 disabled={submitting !== null}
                 className="flex-1 rounded-xl border border-zinc-300 py-2.5 text-sm font-medium hover:bg-zinc-100 disabled:opacity-50"
               >
-                {submitting === "deny" ? "Odrzucanie..." : "Deny"}
+                {submitting === "deny" ? "Denying..." : "Deny"}
               </button>
               <button
                 type="button"
@@ -144,7 +144,7 @@ export default function OAuthConsentPage() {
                 disabled={submitting !== null}
                 className="flex-1 rounded-xl bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
               >
-                {submitting === "approve" ? "Zatwierdzanie..." : "Approve"}
+                {submitting === "approve" ? "Approving..." : "Approve"}
               </button>
             </div>
           </>
