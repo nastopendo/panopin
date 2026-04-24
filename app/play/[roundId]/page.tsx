@@ -293,7 +293,7 @@ export default function RoundPage() {
         {/* Panorama */}
         <div className="flex-[3] relative min-h-0">
           {tilesManifest && (
-            <PanoramaViewer tilesManifest={tilesManifest} className="w-full h-full" />
+            <PanoramaViewer key={tilesManifest.photoId} tilesManifest={tilesManifest} className="w-full h-full" />
           )}
         </div>
 

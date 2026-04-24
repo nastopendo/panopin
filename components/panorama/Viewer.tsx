@@ -82,7 +82,8 @@ export default function PanoramaViewer({ equirectUrl, tilesManifest, className }
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };
-  }, [equirectUrl, tilesManifest]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // props are initial values — photo changes handled via key prop in parent
 
   return (
     <div
