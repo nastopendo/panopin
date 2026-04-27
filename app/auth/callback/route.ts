@@ -1,11 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import { db } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next");
 
   if (code) {
     const cookieStore = await cookies();
@@ -28,7 +31,24 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      if (next) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const [profile] = await db
+          .select({ role: profiles.role })
+          .from(profiles)
+          .where(eq(profiles.id, user.id))
+          .limit(1);
+
+        if (profile?.role === "admin") {
+          return NextResponse.redirect(`${origin}/admin/photos`);
+        }
+      }
+
+      return NextResponse.redirect(`${origin}/`);
     }
   }
 
