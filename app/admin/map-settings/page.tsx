@@ -12,25 +12,37 @@ interface Settings {
   mapStyle: MapStyle;
 }
 
+interface PhotoMarker {
+  id: string;
+  title: string | null;
+  thumbnailUrl: string | null;
+  lat: number;
+  lng: number;
+}
+
 export default function MapSettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [draft, setDraft] = useState<Settings | null>(null);
+  const [photos, setPhotos] = useState<PhotoMarker[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/map-settings")
-      .then((r) => r.json())
-      .then((data) => {
+    Promise.all([
+      fetch("/api/admin/map-settings").then((r) => r.json()),
+      fetch("/api/admin/photos").then((r) => r.json()),
+    ])
+      .then(([settingsData, photosData]: [Settings, PhotoMarker[]]) => {
         const s: Settings = {
-          centerLat: data.centerLat,
-          centerLng: data.centerLng,
-          defaultZoom: data.defaultZoom,
-          mapStyle: data.mapStyle,
+          centerLat: settingsData.centerLat,
+          centerLng: settingsData.centerLng,
+          defaultZoom: settingsData.defaultZoom,
+          mapStyle: settingsData.mapStyle,
         };
         setSettings(s);
         setDraft(s);
+        setPhotos(photosData);
       })
       .catch(() => setError("Nie można wczytać ustawień"));
   }, []);
@@ -110,7 +122,8 @@ export default function MapSettingsPage() {
       {/* Map editor — key forces remount when style changes, preserving current position */}
       <div>
         <div className="text-sm font-medium text-zinc-700 mb-2">
-          Domyślne położenie i zoom — przeciągnij i przybliż mapę do wybranego obszaru
+          Domyślne położenie i zoom — przeciągnij i przybliż mapę do wybranego obszaru.
+          Markery pokazują wszystkie zdjęcia w bazie ({photos.length}) — kliknij, aby zobaczyć podgląd.
         </div>
         <div className="rounded-xl overflow-hidden border border-zinc-200 h-[420px]">
           <AdminMap
@@ -119,6 +132,7 @@ export default function MapSettingsPage() {
             initialLng={draft.centerLng}
             initialZoom={draft.defaultZoom}
             mapStyle={draft.mapStyle}
+            photos={photos}
             onMoveEnd={(lat, lng, zoom) =>
               setDraft((d) => d && { ...d, centerLat: lat, centerLng: lng, defaultZoom: zoom })
             }
@@ -140,11 +154,21 @@ interface AdminMapProps {
   initialLng: number;
   initialZoom: number;
   mapStyle: MapStyle;
+  photos: PhotoMarker[];
   onMoveEnd: (lat: number, lng: number, zoom: number) => void;
 }
 
-function AdminMap({ initialLat, initialLng, initialZoom, mapStyle, onMoveEnd }: AdminMapProps) {
+function AdminMap({
+  initialLat,
+  initialLng,
+  initialZoom,
+  mapStyle,
+  photos,
+  onMoveEnd,
+}: AdminMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -155,6 +179,7 @@ function AdminMap({ initialLat, initialLng, initialZoom, mapStyle, onMoveEnd }: 
       center: [initialLng, initialLat],
       zoom: initialZoom,
     });
+    mapRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
@@ -167,9 +192,55 @@ function AdminMap({ initialLat, initialLng, initialZoom, mapStyle, onMoveEnd }: 
       );
     });
 
-    return () => map.remove();
+    return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      map.remove();
+      mapRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // deps intentionally empty — props are initial values; style change handled via key
+
+  // Sync photo markers when the photos list changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    photos.forEach((photo) => {
+      const popupEl = document.createElement("div");
+      popupEl.style.cssText = "min-width: 180px; text-align: center;";
+
+      if (photo.thumbnailUrl) {
+        const img = document.createElement("img");
+        img.src = photo.thumbnailUrl;
+        img.alt = "";
+        img.loading = "lazy";
+        img.style.cssText =
+          "width: 100%; max-width: 220px; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; display: block;";
+        popupEl.appendChild(img);
+      }
+
+      const titleEl = document.createElement("div");
+      titleEl.style.cssText = "font-size: 12px; font-weight: 500; color: #18181b;";
+      titleEl.textContent = photo.title ?? "(bez tytułu)";
+      popupEl.appendChild(titleEl);
+
+      const coordsEl = document.createElement("div");
+      coordsEl.style.cssText =
+        "font-size: 11px; color: #71717a; font-family: ui-monospace, monospace; margin-top: 2px;";
+      coordsEl.textContent = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
+      popupEl.appendChild(coordsEl);
+
+      const marker = new maplibregl.Marker({ color: "#3b82f6" })
+        .setLngLat([photo.lng, photo.lat])
+        .setPopup(new maplibregl.Popup({ offset: 25, closeButton: true }).setDOMContent(popupEl))
+        .addTo(map);
+      markersRef.current.push(marker);
+    });
+  }, [photos]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }
