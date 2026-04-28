@@ -6,6 +6,7 @@ import { photos, rounds } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 import { UserNav } from "@/components/UserNav";
+import { Footer } from "@/components/Footer";
 
 export const revalidate = 60;
 
@@ -138,16 +139,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-border/60 px-4 sm:px-6 py-6 text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3">
-        <span>
-          © {new Date().getFullYear()} Panopin · Otwartoźródłowy projekt
-        </span>
-        <div className="flex items-center gap-4">
-          <Link href="/leaderboard" className="hover:text-foreground transition-colors">
-            Ranking
-          </Link>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

@@ -6,6 +6,7 @@ import { desc, eq, isNotNull } from "drizzle-orm";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
+import { Footer } from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ export default async function LeaderboardPage() {
   const rest = rows.slice(3);
 
   return (
-    <main className="bg-aurora min-h-dvh">
+    <main className="bg-aurora min-h-dvh flex flex-col">
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
         <Logo size="md" />
         <Button asChild variant="ghost" size="sm">
@@ -150,6 +151,8 @@ export default async function LeaderboardPage() {
           </div>
         )}
       </div>
+
+      <Footer />
     </main>
   );
 }

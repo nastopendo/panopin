@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/brand/Logo";
+import { Footer } from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
 const ShareButton = dynamic(
@@ -111,7 +112,7 @@ export default async function ResultsPage({
   const shareUrl = `${siteUrl}/results/${roundId}`;
 
   return (
-    <main className="bg-aurora min-h-dvh">
+    <main className="bg-aurora min-h-dvh flex flex-col">
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
         <Logo size="md" />
         <Button asChild variant="ghost" size="sm">
@@ -178,6 +179,8 @@ export default async function ResultsPage({
           </Link>
         </Button>
       </div>
+
+      <Footer />
     </main>
   );
 }

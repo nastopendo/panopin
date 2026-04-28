@@ -69,7 +69,13 @@ R2_BUCKET=panopin
 R2_PUBLIC_BASE_URL=https://pub-xxxx.r2.dev
 
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Legal pages — shown in /privacy and /cookies
+NEXT_PUBLIC_SITE_OWNER=Your Name or Organization
+NEXT_PUBLIC_CONTACT_EMAIL=contact@your-domain.com
 ```
+
+> **Note:** `NEXT_PUBLIC_SITE_OWNER` and `NEXT_PUBLIC_CONTACT_EMAIL` appear in the Privacy Policy and Cookie Policy pages. They are embedded in the static HTML at build time — set them before deploying. If omitted, the pages fall back to generic placeholders.
 
 ### 6. Run locally
 
