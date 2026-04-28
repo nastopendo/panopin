@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
-import { photos, photoTags } from "@/lib/db/schema";
+import { photos, photoTags, guesses } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/server";
 
@@ -56,6 +56,7 @@ export async function DELETE(
   if (!admin) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { id } = await params;
+  await db.delete(guesses).where(eq(guesses.photoId, id));
   await db.delete(photos).where(eq(photos.id, id));
   return new NextResponse(null, { status: 204 });
 }
