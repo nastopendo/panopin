@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Image as ImageIcon, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -88,10 +89,15 @@ export default function AdminPhotosPage() {
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    const id = pendingDelete.id;
+    const { id, title } = pendingDelete;
     setPendingDelete(null);
-    await fetch(`/api/admin/photos/${id}`, { method: "DELETE" });
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
+    const res = await fetch(`/api/admin/photos/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setPhotos((prev) => prev.filter((p) => p.id !== id));
+      toast.success(`Zdjęcie „${title ?? "bez tytułu"}" usunięte`);
+    } else {
+      toast.error("Nie udało się usunąć zdjęcia");
+    }
   }
 
   return (

@@ -11,7 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), {
   ssr: false,
@@ -129,6 +131,7 @@ export default function UploadPage() {
         },
         setProgress,
       );
+      toast.success("Zdjęcie dodane do bazy");
       router.push("/admin/photos");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Nieznany błąd uploadu");
@@ -267,12 +270,12 @@ export default function UploadPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="description">Opis (opcjonalnie)</Label>
-              <textarea
+              <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="flex w-full rounded-lg border border-input bg-card/30 px-3.5 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:bg-card/60 focus-visible:ring-2 focus-visible:ring-ring/40 resize-none"
+                className="min-h-0 resize-none"
               />
             </div>
 

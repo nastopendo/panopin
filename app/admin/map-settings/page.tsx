@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Check, Loader2, Map as MapIcon, Satellite } from "lucide-react";
+import { Loader2, Map as MapIcon, Satellite } from "lucide-react";
+import { toast } from "sonner";
 import { getMapStyleSpec, type MapStyle } from "@/lib/map-styles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +30,6 @@ export default function MapSettingsPage() {
   const [draft, setDraft] = useState<Settings | null>(null);
   const [photos, setPhotos] = useState<PhotoMarker[]>([]);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,7 +62,6 @@ export default function MapSettingsPage() {
   async function handleSave() {
     if (!draft) return;
     setSaving(true);
-    setSaved(false);
     setError(null);
     try {
       const res = await fetch("/api/admin/map-settings", {
@@ -72,8 +71,7 @@ export default function MapSettingsPage() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSettings(draft);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      toast.success("Ustawienia mapy zapisane");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Błąd zapisu");
     } finally {
@@ -112,12 +110,6 @@ export default function MapSettingsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {saved && (
-            <span className="inline-flex items-center gap-1.5 text-success text-sm font-medium">
-              <Check className="size-4" />
-              Zapisano
-            </span>
-          )}
           <Button
             onClick={handleSave}
             disabled={saving || !dirty}
@@ -135,7 +127,7 @@ export default function MapSettingsPage() {
         </div>
       </header>
 
-      {error && !saved && (
+      {error && (
         <div
           role="alert"
           className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"

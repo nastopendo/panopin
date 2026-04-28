@@ -1,17 +1,9 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Image as ImageIcon, Map as MapIcon, Tag as TagIcon, Upload } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/server";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/brand/Logo";
-
-const NAV = [
-  { href: "/admin/upload", label: "Upload", icon: Upload },
-  { href: "/admin/photos", label: "Zdjęcia", icon: ImageIcon },
-  { href: "/admin/tags", label: "Tagi", icon: TagIcon },
-  { href: "/admin/map-settings", label: "Mapa", icon: MapIcon },
-];
+import { AdminNav } from "@/components/admin/AdminNav";
 
 function getInitials(value: string | null | undefined): string {
   if (!value) return "??";
@@ -47,21 +39,7 @@ export default async function AdminLayout({
             </Avatar>
           </div>
         </div>
-        <nav className="px-4 sm:px-6 -mb-px overflow-x-auto">
-          <ul className="flex items-center gap-1">
-            {NAV.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="inline-flex items-center gap-2 rounded-t-lg px-3 sm:px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors border-b-2 border-transparent whitespace-nowrap"
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <AdminNav />
       </header>
       <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8">{children}</main>
     </div>

@@ -54,7 +54,7 @@ export async function GET(
           flexDirection: "column",
           width: "100%",
           height: "100%",
-          background: "#09090b",
+          background: "#0c0c10",
           color: "white",
           fontFamily: "system-ui, sans-serif",
           padding: "64px 80px",
@@ -67,12 +67,13 @@ export async function GET(
           <span
             style={{
               fontSize: "12px",
-              background: "#27272a",
-              color: "#a1a1aa",
+              background: "#f59e0b22",
+              color: "#f59e0b",
               padding: "4px 10px",
               borderRadius: "6px",
               fontWeight: "600",
               letterSpacing: "0.05em",
+              border: "1px solid #f59e0b44",
             }}
           >
             WYNIKI
@@ -88,7 +89,7 @@ export async function GET(
             punktów z 5 lokalizacji
           </div>
           {topPercent !== null && (
-            <div style={{ fontSize: "22px", color: "#34d399", fontWeight: "600", marginTop: "4px" }}>
+            <div style={{ fontSize: "22px", color: "#f59e0b", fontWeight: "600", marginTop: "4px" }}>
               top {topPercent}% graczy
             </div>
           )}
@@ -100,7 +101,7 @@ export async function GET(
             {steps.map((s) => {
               const h = Math.max(8, Math.round(((s.score ?? 0) / 5300) * 60));
               const color =
-                (s.score ?? 0) >= 4000 ? "#34d399" : (s.score ?? 0) >= 2000 ? "#fbbf24" : "#f87171";
+                (s.score ?? 0) >= 4000 ? "#4ade80" : (s.score ?? 0) >= 2000 ? "#f59e0b" : "#f87171";
               return (
                 <div key={s.sequence} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
                   <div

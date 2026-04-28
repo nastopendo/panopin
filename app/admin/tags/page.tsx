@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Tag as TagIcon, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -77,17 +78,21 @@ export default function AdminTagsPage() {
     } else {
       setTagList((prev) => [...prev, data]);
       setName("");
+      toast.success(`Tag „${data.name}" dodany`);
     }
     setSaving(false);
   }
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    const id = pendingDelete.id;
+    const { id, name } = pendingDelete;
     setPendingDelete(null);
     const res = await fetch(`/api/admin/tags/${id}`, { method: "DELETE" });
     if (res.ok) {
       setTagList((prev) => prev.filter((t) => t.id !== id));
+      toast.success(`Tag „${name}" usunięty`);
+    } else {
+      toast.error("Nie udało się usunąć tagu");
     }
   }
 
