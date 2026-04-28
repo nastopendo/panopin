@@ -7,7 +7,7 @@ export const metadata = { title: "Nie znaleziono" };
 
 export default function NotFound() {
   return (
-    <main className="bg-aurora min-h-screen flex flex-col">
+    <main className="bg-aurora min-h-dvh flex flex-col">
       <header className="px-4 sm:px-6 py-4">
         <Logo size="md" />
       </header>

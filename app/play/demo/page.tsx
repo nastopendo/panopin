@@ -67,7 +67,10 @@ export default function DemoPage() {
 
       {/* Result overlay */}
       {guess && distance !== null && (
-        <div className="absolute inset-0 flex items-end justify-center pb-16 pointer-events-none z-20">
+        <div
+          className="absolute inset-0 flex items-end justify-center pointer-events-none z-20"
+          style={{ paddingBottom: "max(4rem, calc(env(safe-area-inset-bottom) + 1rem))" }}
+        >
           <div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl p-6 text-center shadow-2xl pointer-events-auto w-full max-w-xs mx-4 animate-in slide-in-from-bottom-4 fade-in duration-300">
             <div className="size-12 rounded-full bg-brand/15 ring-1 ring-brand/30 flex items-center justify-center mx-auto mb-3">
               <MapPin className="size-6 text-brand" />

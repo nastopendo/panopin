@@ -52,7 +52,7 @@ export default async function HomePage() {
   const stats = await loadStats();
 
   return (
-    <main className="bg-aurora min-h-screen flex flex-col">
+    <main className="bg-aurora min-h-dvh flex flex-col">
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
         <Logo size="md" />
         <nav className="flex items-center gap-3 sm:gap-5">

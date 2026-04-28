@@ -111,7 +111,7 @@ export default async function ResultsPage({
   const shareUrl = `${siteUrl}/results/${roundId}`;
 
   return (
-    <main className="bg-aurora min-h-screen">
+    <main className="bg-aurora min-h-dvh">
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
         <Logo size="md" />
         <Button asChild variant="ghost" size="sm">

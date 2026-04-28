@@ -163,7 +163,10 @@ export default function GuessMap({
       <div ref={containerRef} className="w-full h-full" />
 
       {pin && !disabled && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+        <div
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
           <button
             onClick={() => onConfirm(pin)}
             className="bg-brand text-brand-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-lg hover:opacity-90 active:scale-[0.97] transition-all"
@@ -174,7 +177,10 @@ export default function GuessMap({
       )}
 
       {!pin && !disabled && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none">
+        <div
+          className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+          style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
           <div className="bg-background/80 backdrop-blur-md border border-border text-muted-foreground px-4 py-2 rounded-full text-xs shadow">
             Kliknij na mapie aby zaznaczyć miejsce
           </div>

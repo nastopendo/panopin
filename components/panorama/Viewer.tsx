@@ -38,7 +38,7 @@ export default function PanoramaViewer({ equirectUrl, tilesManifest, className }
       const config: any = {
         container: containerRef.current,
         defaultYaw: tilesManifest?.heading ?? 0,
-        touchmoveTwoFingers: true,
+        touchmoveTwoFingers: false,
         navbar: ["zoom", "fullscreen"],
         loadingTxt: "Ładowanie…",
       };

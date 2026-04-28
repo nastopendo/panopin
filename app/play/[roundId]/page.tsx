@@ -208,8 +208,8 @@ export default function RoundPage() {
 
   if (phase === "loading") {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <div className="px-4 sm:px-6 py-4 border-b flex items-center justify-between">
+      <div className="h-dvh flex flex-col bg-background">
+        <div className="px-4 sm:px-6 py-4 border-b flex items-center justify-between shrink-0">
           <Logo size="md" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
@@ -228,7 +228,7 @@ export default function RoundPage() {
 
   if (phase === "error") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 text-center bg-aurora">
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 p-6 text-center bg-aurora">
         <div className="rounded-full size-12 bg-destructive/15 ring-1 ring-destructive/30 flex items-center justify-center">
           <Target className="size-6 text-destructive" />
         </div>
@@ -255,7 +255,7 @@ export default function RoundPage() {
 
   if (phase === "finished") {
     return (
-      <div className="min-h-screen bg-aurora overflow-y-auto">
+      <div className="min-h-dvh bg-aurora overflow-y-auto">
         <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
           <Logo size="md" />
           <Button asChild variant="ghost" size="sm">
@@ -346,7 +346,7 @@ export default function RoundPage() {
   // ─── Playing / revealed ────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-dvh bg-background">
       <div className="px-3 sm:px-4 py-2.5 bg-background/95 backdrop-blur-md border-b flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <Logo size="sm" showWordmark={false} />
@@ -465,7 +465,10 @@ function ResultOverlay({
   const isLast = stepNumber >= totalSteps;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-4 sm:pb-6 pointer-events-none z-20 px-3">
+    <div
+      className="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none z-20 px-3"
+      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+    >
       <div
         className={cn(
           "bg-card/95 backdrop-blur-xl border rounded-2xl shadow-2xl pointer-events-auto w-full max-w-md",

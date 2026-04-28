@@ -19,7 +19,7 @@ export default async function AdminLayout({
   if (!admin) redirect("/");
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="min-h-dvh flex flex-col bg-background text-foreground">
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b">
         <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">

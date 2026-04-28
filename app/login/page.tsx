@@ -27,7 +27,7 @@ function LoginShell({
   children?: React.ReactNode;
 }) {
   return (
-    <main className="bg-aurora min-h-screen flex flex-col">
+    <main className="bg-aurora min-h-dvh flex flex-col">
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
         <Logo size="md" />
         <Button asChild variant="ghost" size="sm">
