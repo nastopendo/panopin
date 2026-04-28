@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Check, Loader2, Map as MapIcon, Satellite } from "lucide-react";
 import { getMapStyleSpec, type MapStyle } from "@/lib/map-styles";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface Settings {
   centerLat: number;
@@ -47,6 +51,14 @@ export default function MapSettingsPage() {
       .catch(() => setError("Nie można wczytać ustawień"));
   }, []);
 
+  const dirty =
+    !!settings &&
+    !!draft &&
+    (settings.centerLat !== draft.centerLat ||
+      settings.centerLng !== draft.centerLng ||
+      settings.defaultZoom !== draft.defaultZoom ||
+      settings.mapStyle !== draft.mapStyle);
+
   async function handleSave() {
     if (!draft) return;
     setSaving(true);
@@ -72,11 +84,19 @@ export default function MapSettingsPage() {
   if (!draft) {
     return (
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Ustawienia mapy</h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-6">Ustawienia mapy</h1>
         {error ? (
-          <div className="text-red-500">{error}</div>
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
+            {error}
+          </div>
         ) : (
-          <div className="text-zinc-500">Ładowanie…</div>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Loader2 className="size-4 animate-spin" />
+            Ładowanie ustawień…
+          </div>
         )}
       </div>
     );
@@ -84,70 +104,113 @@ export default function MapSettingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ustawienia mapy</h1>
+      <header className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Ustawienia mapy</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Domyślny widok mapy graczy podczas zgadywania.
+          </p>
+        </div>
         <div className="flex items-center gap-3">
-          {saved && <span className="text-emerald-600 text-sm font-medium">Zapisano ✓</span>}
-          {error && <span className="text-red-500 text-sm">{error}</span>}
-          <button
+          {saved && (
+            <span className="inline-flex items-center gap-1.5 text-success text-sm font-medium">
+              <Check className="size-4" />
+              Zapisano
+            </span>
+          )}
+          <Button
             onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-semibold hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            disabled={saving || !dirty}
+            variant="brand"
           >
-            {saving ? "Zapisuję…" : "Zapisz"}
-          </button>
+            {saving ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Zapisuję…
+              </>
+            ) : (
+              "Zapisz"
+            )}
+          </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Style toggle */}
-      <div>
-        <div className="text-sm font-medium text-zinc-700 mb-2">Styl mapy</div>
-        <div className="flex gap-2">
-          {(["street", "satellite"] as MapStyle[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setDraft((d) => d && { ...d, mapStyle: s })}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                draft.mapStyle === s
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
-              }`}
-            >
-              {s === "street" ? "Ulica" : "Satelita"}
-            </button>
-          ))}
+      {error && !saved && (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          {error}
         </div>
-      </div>
+      )}
 
-      {/* Map editor — key forces remount when style changes, preserving current position */}
-      <div>
-        <div className="text-sm font-medium text-zinc-700 mb-2">
-          Domyślne położenie i zoom — przeciągnij i przybliż mapę do wybranego obszaru.
-          Markery pokazują wszystkie zdjęcia w bazie ({photos.length}) — kliknij, aby zobaczyć podgląd.
-        </div>
-        <div className="rounded-xl overflow-hidden border border-zinc-200 h-[420px]">
-          <AdminMap
-            key={draft.mapStyle}
-            initialLat={draft.centerLat}
-            initialLng={draft.centerLng}
-            initialZoom={draft.defaultZoom}
-            mapStyle={draft.mapStyle}
-            photos={photos}
-            onMoveEnd={(lat, lng, zoom) =>
-              setDraft((d) => d && { ...d, centerLat: lat, centerLng: lng, defaultZoom: zoom })
-            }
-          />
-        </div>
-        <div className="mt-2 text-xs text-zinc-500 font-mono">
-          lat: {draft.centerLat.toFixed(4)}, lng: {draft.centerLng.toFixed(4)}, zoom:{" "}
-          {draft.defaultZoom.toFixed(1)}
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Styl mapy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ToggleGroup
+            type="single"
+            value={draft.mapStyle}
+            onValueChange={(v) => v && setDraft((d) => d && { ...d, mapStyle: v as MapStyle })}
+          >
+            <ToggleGroupItem value="street" aria-label="Ulica">
+              <MapIcon className="size-4" />
+              Ulica
+            </ToggleGroupItem>
+            <ToggleGroupItem value="satellite" aria-label="Satelita">
+              <Satellite className="size-4" />
+              Satelita
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Domyślne położenie i zoom</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Przeciągnij i przybliż mapę do wybranego obszaru. Markery pokazują wszystkie zdjęcia w bazie ({photos.length}) — kliknij, aby zobaczyć podgląd.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="rounded-xl overflow-hidden border h-[420px]">
+            <AdminMap
+              key={draft.mapStyle}
+              initialLat={draft.centerLat}
+              initialLng={draft.centerLng}
+              initialZoom={draft.defaultZoom}
+              mapStyle={draft.mapStyle}
+              photos={photos}
+              onMoveEnd={(lat, lng, zoom) =>
+                setDraft(
+                  (d) =>
+                    d && { ...d, centerLat: lat, centerLng: lng, defaultZoom: zoom },
+                )
+              }
+            />
+          </div>
+          <dl className="grid grid-cols-3 gap-3 text-xs">
+            <Stat label="Szerokość" value={draft.centerLat.toFixed(4)} />
+            <Stat label="Długość" value={draft.centerLng.toFixed(4)} />
+            <Stat label="Zoom" value={draft.defaultZoom.toFixed(1)} />
+          </dl>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-// ─── Admin map component ──────────────────────────────────────────────────────
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-card/40 px-3 py-2">
+      <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="font-mono text-sm tabular-nums">{value}</dd>
+    </div>
+  );
+}
 
 interface AdminMapProps {
   initialLat: number;
@@ -199,9 +262,8 @@ function AdminMap({
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // deps intentionally empty — props are initial values; style change handled via key
+  }, []);
 
-  // Sync photo markers when the photos list changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -234,9 +296,11 @@ function AdminMap({
       coordsEl.textContent = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
       popupEl.appendChild(coordsEl);
 
-      const marker = new maplibregl.Marker({ color: "#3b82f6" })
+      const marker = new maplibregl.Marker({ color: "#f59e0b" })
         .setLngLat([photo.lng, photo.lat])
-        .setPopup(new maplibregl.Popup({ offset: 25, closeButton: true }).setDOMContent(popupEl))
+        .setPopup(
+          new maplibregl.Popup({ offset: 25, closeButton: true }).setDOMContent(popupEl),
+        )
         .addTo(map);
       markersRef.current.push(marker);
     });

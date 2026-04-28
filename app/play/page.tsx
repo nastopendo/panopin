@@ -1,8 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, Filter, Loader2, Sparkles } from "lucide-react";
 import { ensureGuestSession } from "@/lib/auth/guest";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Logo } from "@/components/brand/Logo";
+import { cn } from "@/lib/utils";
 
 interface Tag {
   id: string;
@@ -24,14 +38,18 @@ export default function PlayPage() {
   const [error, setError] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
   const [tags, setTags] = useState<Tag[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(true);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
     fetch("/api/admin/tags")
       .then((r) => r.json())
-      .then((data) => Array.isArray(data) && setTags(data))
-      .catch(() => {});
+      .then((data) => {
+        if (Array.isArray(data)) setTags(data);
+      })
+      .catch(() => {})
+      .finally(() => setTagsLoading(false));
   }, []);
 
   function toggleTag(id: string) {
@@ -68,86 +86,148 @@ export default function PlayPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-8 bg-zinc-950 text-white p-8">
-      <div className="text-center space-y-3 max-w-md">
-        <h1 className="text-4xl font-bold tracking-tight">Panopin</h1>
-        <p className="text-zinc-400">
-          Obejrzyj panoramę 360° i wskaż na mapie, gdzie została zrobiona.
-          5 lokalizacji, im bliżej — tym więcej punktów.
-        </p>
-      </div>
+    <main className="bg-aurora min-h-screen flex flex-col">
+      <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
+        <Logo size="md" />
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Strona główna</span>
+        </Link>
+      </header>
 
-      {/* Filters */}
-      <div className="w-full max-w-sm space-y-4">
-        {/* Difficulty */}
-        <div>
-          <div className="text-xs text-zinc-500 mb-2 font-medium uppercase tracking-wide">Trudność</div>
-          <div className="flex gap-2 flex-wrap">
-            {DIFFICULTY_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setDifficulty(opt.value)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                  difficulty === opt.value
-                    ? "bg-white text-zinc-900 border-white"
-                    : "bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+      <section className="flex-1 flex flex-col items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md flex flex-col items-center gap-6">
+          <div className="text-center space-y-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border bg-card/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+              <Sparkles className="size-3 text-brand" />5 lokalizacji · jedna runda
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              Gotów do gry?
+            </h1>
+            <p className="text-muted-foreground">
+              Wybierz trudność i opcjonalne tagi — albo zostaw wszystko i zaczynaj.
+            </p>
           </div>
-        </div>
 
-        {/* Tags (only if any exist) */}
-        {tags.length > 0 && (
-          <div>
-            <div className="text-xs text-zinc-500 mb-2 font-medium uppercase tracking-wide">
-              Tagi (opcjonalnie)
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => toggleTag(tag.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-opacity ${
-                    selectedTagIds.includes(tag.id) ? "opacity-100" : "opacity-40"
-                  }`}
-                  style={{
-                    background: tag.color + "22",
-                    color: tag.color,
-                    borderColor: tag.color,
-                  }}
+          <Card className="w-full bg-card/60 backdrop-blur-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Filter className="size-4 text-muted-foreground" />
+                Filtry
+              </CardTitle>
+              <CardDescription>Zostaną zastosowane do losowania.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
+                  Trudność
+                </p>
+                <ToggleGroup
+                  type="single"
+                  value={difficulty}
+                  onValueChange={(v) => v && setDifficulty(v as Difficulty | "all")}
+                  className="w-full"
                 >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-            {selectedTagIds.length > 0 && (
-              <button
-                onClick={() => setSelectedTagIds([])}
-                className="text-xs text-zinc-600 hover:text-zinc-400 mt-1 transition-colors"
-              >
-                Wyczyść tagi
-              </button>
+                  {DIFFICULTY_OPTIONS.map((opt) => (
+                    <ToggleGroupItem
+                      key={opt.value}
+                      value={opt.value}
+                      aria-label={opt.label}
+                      className="flex-1 min-w-[5rem]"
+                    >
+                      {opt.label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+
+              <div>
+                <div className="flex items-baseline justify-between mb-2">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Tagi <span className="text-muted-foreground/60 normal-case">(opcjonalnie)</span>
+                  </p>
+                  {selectedTagIds.length > 0 && (
+                    <button
+                      onClick={() => setSelectedTagIds([])}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Wyczyść ({selectedTagIds.length})
+                    </button>
+                  )}
+                </div>
+                {tagsLoading ? (
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-9 w-20 rounded-full" />
+                    ))}
+                  </div>
+                ) : tags.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    Brak tagów w bazie.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => {
+                      const active = selectedTagIds.includes(tag.id);
+                      return (
+                        <button
+                          key={tag.id}
+                          onClick={() => toggleTag(tag.id)}
+                          aria-pressed={active}
+                          className={cn(
+                            "inline-flex items-center h-9 px-3 rounded-full text-xs font-medium border transition-all duration-150",
+                            "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                            active ? "scale-100" : "opacity-60 hover:opacity-100",
+                          )}
+                          style={{
+                            background: active ? tag.color + "33" : "transparent",
+                            color: tag.color,
+                            borderColor: active ? tag.color : tag.color + "55",
+                          }}
+                        >
+                          {tag.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button
+            onClick={startGame}
+            disabled={loading}
+            size="xl"
+            variant="brand"
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Przygotowuję grę…
+              </>
+            ) : (
+              <>
+                Zagraj
+                <ArrowRight />
+              </>
             )}
-          </div>
-        )}
-      </div>
+          </Button>
 
-      <button
-        onClick={startGame}
-        disabled={loading}
-        className="px-10 py-4 bg-white text-zinc-900 rounded-2xl font-bold text-lg hover:bg-zinc-100 transition-colors disabled:opacity-50"
-      >
-        {loading ? "Przygotowuję grę…" : "Zagraj"}
-      </button>
-
-      {error && (
-        <p className="text-red-400 text-sm bg-red-950/50 px-4 py-2 rounded-lg max-w-sm text-center">
-          {error}
-        </p>
-      )}
+          {error && (
+            <div
+              role="alert"
+              className="w-full rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              {error}
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }

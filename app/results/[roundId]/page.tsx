@@ -1,16 +1,26 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { eq } from "drizzle-orm";
+import { ArrowLeft, ArrowRight, Trophy } from "lucide-react";
 import { db } from "@/lib/db/client";
 import { guesses, profiles, rounds } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { ShareButton } from "@/components/ShareButton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Logo } from "@/components/brand/Logo";
+import { cn } from "@/lib/utils";
 
-// ─── Metadata (OG tags) ───────────────────────────────────────────────────────
+const ShareButton = dynamic(
+  () => import("@/components/ShareButton").then((m) => ({ default: m.ShareButton })),
+);
 
-export async function generateMetadata(
-  { params }: { params: Promise<{ roundId: string }> },
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ roundId: string }>;
+}): Promise<Metadata> {
   const { roundId } = await params;
   const [round] = await db
     .select({ totalScore: rounds.totalScore })
@@ -23,8 +33,8 @@ export async function generateMetadata(
   const imageUrl = `${siteUrl}/api/og/${roundId}`;
 
   return {
-    title: `Panopin — ${score} pkt`,
-    description: `Sprawdź czy pobijest mój wynik ${score} punktów z 5 lokalizacji!`,
+    title: `${score} pkt w Panopin`,
+    description: `Sprawdź czy pobijesz mój wynik ${score} punktów z 5 lokalizacji.`,
     openGraph: {
       title: `Panopin — ${score} pkt`,
       description: `Zdobyłem ${score} pkt z 5 lokalizacji!`,
@@ -38,24 +48,29 @@ export async function generateMetadata(
   };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function formatDistance(m: number): string {
   if (m < 1000) return `${m} m`;
   return `${(m / 1000).toFixed(1)} km`;
 }
 
 function scoreColor(score: number): string {
-  if (score >= 4000) return "text-emerald-400";
-  if (score >= 2000) return "text-yellow-400";
-  return "text-red-400";
+  if (score >= 4000) return "text-success";
+  if (score >= 2000) return "text-warning";
+  return "text-destructive";
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function getInitials(name: string | null | undefined): string {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
-export default async function ResultsPage(
-  { params }: { params: Promise<{ roundId: string }> },
-) {
+export default async function ResultsPage({
+  params,
+}: {
+  params: Promise<{ roundId: string }>;
+}) {
   const { roundId } = await params;
 
   const [round] = await db
@@ -96,59 +111,73 @@ export default async function ResultsPage(
   const shareUrl = `${siteUrl}/results/${roundId}`;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="max-w-lg mx-auto px-4 py-10 flex flex-col gap-6">
-        {/* Score header */}
-        <div className="text-center">
-          <div className="text-sm text-zinc-500 mb-1 font-medium">
+    <main className="bg-aurora min-h-screen">
+      <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
+        <Logo size="md" />
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/">
+            <ArrowLeft />
+            <span className="hidden sm:inline">Strona główna</span>
+          </Link>
+        </Button>
+      </header>
+
+      <div className="max-w-lg mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-6">
+        <Card className="p-6 sm:p-8 text-center bg-card/60 backdrop-blur-md">
+          <Avatar className="size-12 mx-auto">
+            <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
+          </Avatar>
+          <p className="mt-3 text-sm text-muted-foreground">
             {displayName ?? "Anonimowy gracz"}
-          </div>
-          <div className="text-6xl font-bold tracking-tight">
+          </p>
+          <div className="mt-2 text-6xl font-bold tabular-nums tracking-tight">
             {round.totalScore?.toLocaleString("pl-PL")}
           </div>
-          <div className="text-zinc-400 text-sm mt-1">punktów z 5 lokalizacji</div>
-        </div>
+          <p className="mt-1 text-muted-foreground text-sm">punktów z 5 lokalizacji</p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {round.completedAt && new Date(round.completedAt).toLocaleDateString("pl-PL", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+        </Card>
 
-        {/* Step results */}
         <div className="space-y-2">
           {stepResults.map((r) => (
             <div
               key={r.sequence}
-              className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3"
+              className="flex items-center gap-3 bg-card/50 border rounded-xl px-4 py-3"
             >
-              <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="size-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold shrink-0">
                 {r.sequence}
               </div>
-              <div className="flex-1 text-sm text-zinc-400">
+              <div className="flex-1 text-sm text-muted-foreground">
                 {r.distanceM != null ? formatDistance(r.distanceM) : "—"} od celu
               </div>
-              <span className={`font-semibold ${scoreColor(r.score ?? 0)}`}>
-                {(r.score ?? 0).toLocaleString("pl-PL")} pkt
+              <span className={cn("font-semibold tabular-nums", scoreColor(r.score ?? 0))}>
+                {(r.score ?? 0).toLocaleString("pl-PL")}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3">
-          <ShareButton
-            url={shareUrl}
-            score={round.totalScore ?? 0}
-          />
-          <Link
-            href="/play"
-            className="w-full text-center px-6 py-3 bg-white text-zinc-900 rounded-xl font-semibold hover:bg-zinc-100 transition-colors"
-          >
-            Zagraj sam!
-          </Link>
-          <Link
-            href="/"
-            className="w-full text-center px-6 py-3 border border-zinc-800 text-zinc-500 rounded-xl hover:border-zinc-600 transition-colors text-sm"
-          >
-            Strona główna
-          </Link>
+        <div className="grid sm:grid-cols-2 gap-2 pt-2">
+          <ShareButton url={shareUrl} score={round.totalScore ?? 0} />
+          <Button asChild variant="brand" size="lg">
+            <Link href="/play">
+              Zagraj sam
+              <ArrowRight />
+            </Link>
+          </Button>
         </div>
+        <Button asChild variant="ghost" size="sm" className="mx-auto">
+          <Link href="/leaderboard">
+            <Trophy />
+            Zobacz ranking
+          </Link>
+        </Button>
       </div>
-    </div>
+    </main>
   );
 }

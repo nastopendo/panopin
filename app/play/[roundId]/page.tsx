@@ -4,14 +4,30 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  MapPin,
+  Target,
+  Trophy,
+} from "lucide-react";
 import type { TileManifest } from "@/components/panorama/Viewer";
 import type { GuessResult } from "@/components/map/GuessMap";
 import type { MapStyle } from "@/lib/map-styles";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Logo } from "@/components/brand/Logo";
+import { cn } from "@/lib/utils";
 
 const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), { ssr: false });
 const GuessMap = dynamic(() => import("@/components/map/GuessMap"), { ssr: false });
 const ResultsMap = dynamic(() => import("@/components/map/ResultsMap"), { ssr: false });
-const ShareButton = dynamic(() => import("@/components/ShareButton").then((m) => ({ default: m.ShareButton })), { ssr: false });
+const ShareButton = dynamic(
+  () => import("@/components/ShareButton").then((m) => ({ default: m.ShareButton })),
+  { ssr: false },
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,9 +73,17 @@ function formatDistance(m: number): string {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 4000) return "text-emerald-400";
-  if (score >= 2000) return "text-yellow-400";
-  return "text-red-400";
+  if (score >= 4000) return "text-success";
+  if (score >= 2000) return "text-warning";
+  return "text-destructive";
+}
+
+function scoreLabel(score: number): string {
+  if (score >= 4500) return "Mistrzowsko";
+  if (score >= 4000) return "Świetnie";
+  if (score >= 2500) return "Dobrze";
+  if (score >= 1000) return "Spróbuj jeszcze";
+  return "Pudło";
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -80,7 +104,6 @@ export default function RoundPage() {
 
   const stepStartRef = useRef<number>(0);
 
-  // Load round + map settings in parallel
   useEffect(() => {
     Promise.all([
       fetch(`/api/rounds/${roundId}`).then((r) => r.json()),
@@ -156,7 +179,8 @@ export default function RoundPage() {
         setTotalScore(data.totalScore);
         setTopPercent(data.topPercent ?? null);
       } catch {
-        const localTotal = results.reduce((s, r) => s + r.score, 0) + (currentResult?.score ?? 0);
+        const localTotal =
+          results.reduce((s, r) => s + r.score, 0) + (currentResult?.score ?? 0);
         setTotalScore(localTotal);
       }
       setPhase("finished");
@@ -167,8 +191,6 @@ export default function RoundPage() {
       stepStartRef.current = Date.now();
     }
   }
-
-  // ─── Current photo manifest ──────────────────────────────────────────────
 
   const currentPhoto = photos[step];
   const tilesManifest: TileManifest | undefined = currentPhoto
@@ -182,123 +204,178 @@ export default function RoundPage() {
 
   const runningScore = results.reduce((s, r) => s + r.score, 0);
 
-  // ─── Render ──────────────────────────────────────────────────────────────
+  // ─── Loading ───────────────────────────────────────────────────────────────
 
   if (phase === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
-        Ładowanie rundy…
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="px-4 sm:px-6 py-4 border-b flex items-center justify-between">
+          <Logo size="md" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Ładowanie rundy…
+          </div>
+        </div>
+        <div className="flex-1 grid md:grid-cols-[3fr_2fr]">
+          <Skeleton className="rounded-none" />
+          <Skeleton className="rounded-none border-l border-border md:border-t-0 border-t" />
+        </div>
       </div>
     );
   }
+
+  // ─── Error ─────────────────────────────────────────────────────────────────
 
   if (phase === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-red-400">
-        {errorMsg}
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 text-center bg-aurora">
+        <div className="rounded-full size-12 bg-destructive/15 ring-1 ring-destructive/30 flex items-center justify-center">
+          <Target className="size-6 text-destructive" />
+        </div>
+        <div className="space-y-1.5">
+          <h1 className="text-xl font-semibold">Nie udało się wczytać rundy</h1>
+          <p className="text-muted-foreground text-sm max-w-sm">{errorMsg}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/">
+              <ArrowLeft />
+              Strona główna
+            </Link>
+          </Button>
+          <Button asChild variant="brand">
+            <Link href="/play">Spróbuj ponownie</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
+  // ─── Finished ──────────────────────────────────────────────────────────────
+
   if (phase === "finished") {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-8 flex flex-col gap-6">
-          {/* Score header */}
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-1">Koniec rundy!</h1>
-            <div className="text-6xl font-bold">{totalScore?.toLocaleString("pl")}</div>
-            <div className="text-zinc-400 text-sm mt-1">punktów łącznie</div>
+      <div className="min-h-screen bg-aurora overflow-y-auto">
+        <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
+          <Logo size="md" />
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/">
+              <ArrowLeft />
+              <span className="hidden sm:inline">Strona główna</span>
+            </Link>
+          </Button>
+        </header>
+
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 text-center bg-card/60 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full border bg-background/50 px-3 py-1 text-xs text-muted-foreground mx-auto">
+              <Trophy className="size-3 text-brand" />
+              Koniec rundy
+            </span>
+            <div className="mt-4 text-6xl sm:text-7xl font-bold tabular-nums tracking-tight">
+              {totalScore?.toLocaleString("pl-PL")}
+            </div>
+            <p className="mt-1 text-muted-foreground text-sm">punktów łącznie</p>
             {topPercent !== null && (
-              <div className="mt-2 text-sm font-medium text-emerald-400">
-                Jesteś w top {topPercent}% graczy!
+              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-medium text-success ring-1 ring-success/30">
+                <Trophy className="size-3" />
+                Jesteś w top {topPercent}% graczy
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Results map */}
-          <div className="rounded-2xl overflow-hidden border border-zinc-800 h-[360px]">
+          <Card className="p-2 overflow-hidden h-[360px] bg-card/60">
             <ResultsMap
               results={results}
               mapStyle={mapSettings.mapStyle}
-              className="w-full h-full"
+              className="w-full h-full rounded-lg overflow-hidden"
             />
-          </div>
+          </Card>
 
-          {/* Per-step results */}
           <div className="space-y-2">
             {results.map((r, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3"
+                className="flex items-center gap-3 bg-card/50 border rounded-xl px-4 py-3"
               >
-                <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="size-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold shrink-0">
                   {i + 1}
                 </div>
-                <div className="flex-1 text-sm text-zinc-400">
-                  {formatDistance(r.distanceM)} od celu
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {scoreLabel(r.score)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatDistance(r.distanceM)} od celu
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className={`font-semibold ${scoreColor(r.score)}`}>
-                    {r.score.toLocaleString("pl")} pkt
+                <div className="text-right shrink-0">
+                  <span className={cn("font-semibold tabular-nums", scoreColor(r.score))}>
+                    {r.score.toLocaleString("pl-PL")}
                   </span>
                   {r.timeBonus > 0 && (
-                    <div className="text-zinc-600 text-xs">+{r.timeBonus} bonus czas</div>
+                    <div className="text-xs text-muted-foreground">
+                      +{r.timeBonus} bonus
+                    </div>
                   )}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-3 justify-center flex-wrap">
-            <Link
-              href="/play"
-              className="px-6 py-3 bg-white text-zinc-900 rounded-xl font-semibold hover:bg-zinc-100 transition-colors"
-            >
-              Zagraj ponownie
-            </Link>
+          <div className="grid sm:grid-cols-3 gap-2 pt-2">
+            <Button asChild variant="brand" size="lg" className="sm:col-span-1">
+              <Link href="/play">Zagraj ponownie</Link>
+            </Button>
             <ShareButton
               url={`${typeof window !== "undefined" ? window.location.origin : ""}/results/${roundId}`}
               score={totalScore ?? 0}
             />
-            <Link
-              href="/leaderboard"
-              className="px-6 py-3 border border-zinc-700 text-zinc-400 rounded-xl hover:border-zinc-500 transition-colors"
-            >
-              Ranking
-            </Link>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/leaderboard">
+                <Trophy />
+                Ranking
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
     );
   }
 
+  // ─── Playing / revealed ────────────────────────────────────────────────────
+
   return (
-    <div className="flex flex-col h-screen bg-zinc-900">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-zinc-950 border-b border-zinc-800 shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-white font-semibold text-sm">Panopin</span>
+    <div className="flex flex-col h-screen bg-background">
+      <div className="px-3 sm:px-4 py-2.5 bg-background/95 backdrop-blur-md border-b flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <Logo size="sm" showWordmark={false} />
           <StepDots total={photos.length} current={step} done={results.length} />
         </div>
-        <div className="text-zinc-400 text-sm">
-          Wynik:{" "}
-          <span className="text-white font-semibold">{runningScore.toLocaleString("pl")}</span>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground hidden sm:inline">Wynik</span>
+          <span className="font-semibold tabular-nums">
+            {runningScore.toLocaleString("pl-PL")}
+          </span>
         </div>
       </div>
 
-      {/* Game area */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        {/* Panorama */}
         <div className="flex-[3] relative min-h-0">
           {tilesManifest && (
-            <PanoramaViewer key={tilesManifest.photoId} tilesManifest={tilesManifest} className="w-full h-full" />
+            <PanoramaViewer
+              key={tilesManifest.photoId}
+              tilesManifest={tilesManifest}
+              className="w-full h-full"
+            />
           )}
+          <div className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-xs text-muted-foreground border">
+            <span className="font-medium text-foreground">{step + 1}</span>
+            <span>z {photos.length}</span>
+          </div>
         </div>
 
-        {/* Map */}
-        <div className="flex-[2] relative border-t md:border-t-0 md:border-l border-zinc-800 min-h-[240px] md:min-h-0">
+        <div className="flex-[2] relative border-t md:border-t-0 md:border-l border-border min-h-[240px] md:min-h-0">
           <GuessMap
             onConfirm={handleGuess}
             disabled={phase === "revealed" || submitting}
@@ -314,15 +391,24 @@ export default function RoundPage() {
             className="w-full h-full"
           />
 
+          {phase === "playing" && !submitting && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-1.5 rounded-full bg-background/80 backdrop-blur px-3 py-1.5 text-xs text-muted-foreground border pointer-events-none">
+              <MapPin className="size-3.5 text-brand" />
+              Postaw pinezkę i potwierdź
+            </div>
+          )}
+
           {submitting && (
-            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/60">
-              <div className="text-white text-sm">Sprawdzam…</div>
+            <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm z-20">
+              <div className="flex items-center gap-2 text-sm">
+                <Loader2 className="size-4 animate-spin" />
+                Sprawdzam…
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Result overlay */}
       {phase === "revealed" && currentResult && (
         <ResultOverlay
           result={currentResult}
@@ -347,13 +433,18 @@ function StepDots({
   done: number;
 }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex items-center gap-1.5" aria-label={`Krok ${current + 1} z ${total}`}>
       {Array.from({ length: total }, (_, i) => (
-        <div
+        <span
           key={i}
-          className={`w-2 h-2 rounded-full ${
-            i < done ? "bg-emerald-500" : i === current ? "bg-white" : "bg-zinc-600"
-          }`}
+          className={cn(
+            "h-1.5 rounded-full transition-all duration-300",
+            i < done
+              ? "w-6 bg-success"
+              : i === current
+                ? "w-6 bg-foreground"
+                : "w-1.5 bg-muted-foreground/30",
+          )}
         />
       ))}
     </div>
@@ -374,29 +465,57 @@ function ResultOverlay({
   const isLast = stepNumber >= totalSteps;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-6 pointer-events-none z-10">
-      <div className="bg-zinc-950/95 border border-zinc-700 rounded-2xl p-5 shadow-2xl pointer-events-auto w-full max-w-sm mx-4">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <div className={`text-3xl font-bold ${scoreColor(result.score)}`}>
-              {result.score.toLocaleString("pl")} pkt
+    <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-4 sm:pb-6 pointer-events-none z-20 px-3">
+      <div
+        className={cn(
+          "bg-card/95 backdrop-blur-xl border rounded-2xl shadow-2xl pointer-events-auto w-full max-w-md",
+          "animate-in slide-in-from-bottom-4 fade-in duration-300",
+        )}
+      >
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                {scoreLabel(result.score)}
+              </p>
+              <p className={cn("text-3xl font-bold tabular-nums", scoreColor(result.score))}>
+                {result.score.toLocaleString("pl-PL")}{" "}
+                <span className="text-sm font-medium text-muted-foreground">pkt</span>
+              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {formatDistance(result.distanceM)} od celu
+              </p>
             </div>
-            <div className="text-zinc-400 text-sm mt-0.5">
-              {formatDistance(result.distanceM)} od celu
+            <div className="text-right text-xs text-muted-foreground space-y-0.5 shrink-0">
+              <div className="flex items-center justify-end gap-1">
+                <span>Bazowe</span>
+                <span className="tabular-nums text-foreground/80">
+                  {result.baseScore.toLocaleString("pl-PL")}
+                </span>
+              </div>
+              {result.timeBonus > 0 && (
+                <div className="flex items-center justify-end gap-1">
+                  <span>Czas</span>
+                  <span className="tabular-nums text-success">+{result.timeBonus}</span>
+                </div>
+              )}
             </div>
           </div>
-          <div className="text-right text-xs text-zinc-500 space-y-0.5">
-            <div>Bazowe: {result.baseScore.toLocaleString("pl")}</div>
-            <div>Czas: +{result.timeBonus}</div>
-          </div>
-        </div>
 
-        <button
-          onClick={onNext}
-          className="w-full bg-white text-zinc-900 rounded-xl py-2.5 text-sm font-semibold hover:bg-zinc-100 transition-colors"
-        >
-          {isLast ? "Zobacz wyniki" : `Panorama ${stepNumber + 1} z ${totalSteps}`}
-        </button>
+          <Button onClick={onNext} variant="brand" size="lg" className="w-full">
+            {isLast ? (
+              <>
+                <Trophy />
+                Zobacz wyniki
+              </>
+            ) : (
+              <>
+                Panorama {stepNumber + 1} z {totalSteps}
+                <ArrowRight />
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

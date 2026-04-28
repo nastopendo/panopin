@@ -2,6 +2,21 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ChevronDown, ChevronUp, Image as ImageIcon, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
 interface Tag {
   id: string;
@@ -20,7 +35,7 @@ interface Photo {
   tagIds: string[];
 }
 
-const DIFFICULTY_LABELS: Record<string, string> = {
+const DIFFICULTY_LABELS: Record<Photo["difficulty"], string> = {
   easy: "Łatwe",
   medium: "Średnie",
   hard: "Trudne",
@@ -31,6 +46,7 @@ export default function AdminPhotosPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Photo | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -42,7 +58,10 @@ export default function AdminPhotosPage() {
     });
   }, []);
 
-  async function patchPhoto(id: string, patch: { difficulty?: string; tagIds?: string[] }) {
+  async function patchPhoto(
+    id: string,
+    patch: { difficulty?: string; tagIds?: string[] },
+  ) {
     setSaving(id);
     await fetch(`/api/admin/photos/${id}`, {
       method: "PATCH",
@@ -52,7 +71,7 @@ export default function AdminPhotosPage() {
     setSaving(null);
   }
 
-  function updateDifficulty(id: string, difficulty: "easy" | "medium" | "hard") {
+  function updateDifficulty(id: string, difficulty: Photo["difficulty"]) {
     setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, difficulty } : p)));
     patchPhoto(id, { difficulty });
   }
@@ -67,110 +86,197 @@ export default function AdminPhotosPage() {
     patchPhoto(photoId, { tagIds });
   }
 
-  async function deletePhoto(id: string) {
-    if (!confirm("Na pewno usunąć to zdjęcie?")) return;
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
     await fetch(`/api/admin/photos/${id}`, { method: "DELETE" });
     setPhotos((prev) => prev.filter((p) => p.id !== id));
   }
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Zdjęcia ({photos.length})</h1>
-        <Link
-          href="/admin/upload"
-          className="bg-zinc-900 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-zinc-700 transition-colors"
-        >
-          + Dodaj zdjęcie
-        </Link>
+      <div className="flex items-center justify-between mb-6 gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Zdjęcia{" "}
+            <span className="text-muted-foreground font-medium tabular-nums">
+              ({photos.length})
+            </span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Zarządzaj panoramami w grze.
+          </p>
+        </div>
+        <Button asChild variant="brand">
+          <Link href="/admin/upload">
+            <Plus />
+            Dodaj zdjęcie
+          </Link>
+        </Button>
       </div>
 
       {photos.length === 0 ? (
-        <div className="bg-white border border-zinc-200 rounded-xl p-12 text-center text-zinc-500">
-          Brak zdjęć.{" "}
-          <Link href="/admin/upload" className="text-zinc-900 underline">
-            Dodaj pierwsze
-          </Link>
-          .
+        <div className="rounded-2xl border bg-card/40 p-12 text-center">
+          <ImageIcon
+            className="size-10 mx-auto text-muted-foreground/40 mb-4"
+            strokeWidth={1.4}
+          />
+          <p className="text-muted-foreground mb-4">
+            Brak zdjęć w bazie.
+          </p>
+          <Button asChild variant="brand">
+            <Link href="/admin/upload">
+              <Plus />
+              Dodaj pierwsze
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {photos.map((p) => (
-            <div key={p.id} className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-              {p.thumbnailUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.thumbnailUrl}
-                  alt={p.title ?? "panorama"}
-                  className="w-full h-32 object-cover"
-                />
-              )}
-              <div className="p-3 space-y-2">
-                <div className="font-medium text-sm truncate">{p.title ?? "(bez tytułu)"}</div>
-                <div className="text-xs text-zinc-500">
-                  {p.lat.toFixed(4)}, {p.lng.toFixed(4)}
+            <article
+              key={p.id}
+              className="rounded-xl border bg-card overflow-hidden flex flex-col"
+            >
+              <div className="relative h-36 bg-secondary/50">
+                {p.thumbnailUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.thumbnailUrl}
+                    alt={p.title ?? "panorama"}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <ImageIcon className="size-8 text-muted-foreground/30" />
+                  </div>
+                )}
+                <div className="absolute top-2 right-2">
+                  <span className="rounded-full bg-background/80 backdrop-blur px-2 py-0.5 text-[10px] font-medium border">
+                    {DIFFICULTY_LABELS[p.difficulty]}
+                  </span>
+                </div>
+              </div>
+              <div className="p-3 space-y-2.5 flex-1 flex flex-col">
+                <div>
+                  <div className="font-medium text-sm truncate">
+                    {p.title ?? <span className="text-muted-foreground italic">(bez tytułu)</span>}
+                  </div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {p.lat.toFixed(4)}, {p.lng.toFixed(4)}
+                  </div>
                 </div>
 
-                {/* Difficulty select */}
-                <select
+                <ToggleGroup
+                  type="single"
+                  size="sm"
                   value={p.difficulty}
-                  onChange={(e) =>
-                    updateDifficulty(p.id, e.target.value as "easy" | "medium" | "hard")
+                  onValueChange={(v) =>
+                    v && updateDifficulty(p.id, v as Photo["difficulty"])
                   }
                   disabled={saving === p.id}
-                  className="w-full text-xs border border-zinc-200 rounded-lg px-2 py-1 outline-none focus:border-zinc-400 disabled:opacity-50"
+                  className="w-full"
                 >
-                  {Object.entries(DIFFICULTY_LABELS).map(([val, label]) => (
-                    <option key={val} value={val}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                  {(Object.keys(DIFFICULTY_LABELS) as Photo["difficulty"][]).map(
+                    (d) => (
+                      <ToggleGroupItem
+                        key={d}
+                        value={d}
+                        aria-label={DIFFICULTY_LABELS[d]}
+                        className="flex-1"
+                      >
+                        {DIFFICULTY_LABELS[d]}
+                      </ToggleGroupItem>
+                    ),
+                  )}
+                </ToggleGroup>
 
-                {/* Tags expand toggle */}
                 {tags.length > 0 && (
                   <div>
                     <button
-                      onClick={() => setExpandedId((prev) => (prev === p.id ? null : p.id))}
-                      className="text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
+                      onClick={() =>
+                        setExpandedId((prev) => (prev === p.id ? null : p.id))
+                      }
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
                     >
-                      {expandedId === p.id ? "▲ Tagi" : `▼ Tagi (${p.tagIds.length})`}
+                      {expandedId === p.id ? (
+                        <ChevronUp className="size-3" />
+                      ) : (
+                        <ChevronDown className="size-3" />
+                      )}
+                      Tagi ({p.tagIds.length})
                     </button>
                     {expandedId === p.id && (
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {tags.map((tag) => (
-                          <button
-                            key={tag.id}
-                            onClick={() => toggleTag(p.id, tag.id)}
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium transition-opacity ${
-                              p.tagIds.includes(tag.id) ? "opacity-100" : "opacity-30"
-                            }`}
-                            style={{ background: tag.color + "33", color: tag.color, border: `1px solid ${tag.color}` }}
-                          >
-                            {tag.name}
-                          </button>
-                        ))}
+                        {tags.map((tag) => {
+                          const active = p.tagIds.includes(tag.id);
+                          return (
+                            <button
+                              key={tag.id}
+                              onClick={() => toggleTag(p.id, tag.id)}
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-xs font-medium border transition-opacity",
+                                active ? "opacity-100" : "opacity-40 hover:opacity-70",
+                              )}
+                              style={{
+                                background: tag.color + "33",
+                                color: tag.color,
+                                borderColor: tag.color + "66",
+                              }}
+                            >
+                              {tag.name}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs text-zinc-400">
-                    {new Date(p.createdAt).toLocaleDateString("pl")}
+                <div className="flex items-center justify-between pt-1 mt-auto">
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(p.createdAt).toLocaleDateString("pl-PL")}
                   </span>
-                  <button
-                    onClick={() => deletePhoto(p.id)}
-                    className="text-xs text-zinc-400 hover:text-red-500 transition-colors"
+                  <Button
+                    onClick={() => setPendingDelete(p)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
                   >
+                    <Trash2 className="size-3.5" />
                     Usuń
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
+
+      <Dialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Usunąć zdjęcie?</DialogTitle>
+            <DialogDescription>
+              Tej operacji nie można cofnąć. Zdjęcie {pendingDelete?.title ?? "(bez tytułu)"} zostanie trwale usunięte z bazy.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDelete(null)}>
+              Anuluj
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              <Trash2 />
+              Usuń zdjęcie
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

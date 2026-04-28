@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Check, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   url: string;
@@ -28,11 +30,23 @@ export function ShareButton({ url, score }: Props) {
   }
 
   return (
-    <button
+    <Button
       onClick={handleShare}
-      className="w-full px-6 py-3 bg-zinc-800 text-white rounded-xl font-semibold hover:bg-zinc-700 transition-colors border border-zinc-700"
+      variant="secondary"
+      size="lg"
+      className="w-full"
     >
-      {copied ? "Skopiowano link ✓" : "Udostępnij wyniki"}
-    </button>
+      {copied ? (
+        <>
+          <Check className="text-success" />
+          Skopiowano link
+        </>
+      ) : (
+        <>
+          <Share2 />
+          Udostępnij wynik
+        </>
+      )}
+    </Button>
   );
 }

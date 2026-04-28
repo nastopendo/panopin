@@ -1,6 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2, Plus, Tag as TagIcon, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface Tag {
   id: string;
@@ -10,8 +24,14 @@ interface Tag {
 }
 
 const PRESET_COLORS = [
-  "#ef4444", "#f97316", "#eab308", "#22c55e",
-  "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280",
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#6b7280",
 ];
 
 function slugify(name: string): string {
@@ -29,6 +49,7 @@ export default function AdminTagsPage() {
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Tag | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/tags")
@@ -60,8 +81,10 @@ export default function AdminTagsPage() {
     setSaving(false);
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Na pewno usunąć ten tag?")) return;
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
     const res = await fetch(`/api/admin/tags/${id}`, { method: "DELETE" });
     if (res.ok) {
       setTagList((prev) => prev.filter((t) => t.id !== id));
@@ -70,72 +93,136 @@ export default function AdminTagsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Tagi</h1>
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight">Tagi</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Tagi pomagają graczom filtrować rundy po tematyce.
+        </p>
+      </header>
 
-      {/* Add tag form */}
-      <form onSubmit={handleAdd} className="bg-white border border-zinc-200 rounded-xl p-5 space-y-4">
-        <div className="text-sm font-medium text-zinc-700">Dodaj nowy tag</div>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Nazwa tagu"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="flex-1 border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
-          />
-          <div className="flex gap-1 items-center">
-            {PRESET_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColor(c)}
-                className={`w-6 h-6 rounded-full transition-transform ${color === c ? "ring-2 ring-offset-1 ring-zinc-400 scale-110" : ""}`}
-                style={{ background: c }}
+      <Card>
+        <CardContent className="p-5">
+          <form onSubmit={handleAdd} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="tag-name">Nazwa tagu</Label>
+              <Input
+                id="tag-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="np. Stare miasto"
               />
-            ))}
-          </div>
-          <button
-            type="submit"
-            disabled={saving || !name.trim()}
-            className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-semibold hover:bg-zinc-700 transition-colors disabled:opacity-50"
-          >
-            {saving ? "…" : "Dodaj"}
-          </button>
-        </div>
-        {name && (
-          <div className="text-xs text-zinc-400">
-            slug: <span className="font-mono">{slugify(name)}</span>
-          </div>
-        )}
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-      </form>
+              {name && (
+                <p className="text-xs text-muted-foreground">
+                  slug: <span className="font-mono">{slugify(name)}</span>
+                </p>
+              )}
+            </div>
 
-      {/* Tag list */}
+            <div className="space-y-1.5">
+              <Label>Kolor</Label>
+              <div className="flex flex-wrap gap-2">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Kolor ${c}`}
+                    onClick={() => setColor(c)}
+                    className={cn(
+                      "size-8 rounded-full transition-transform outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      color === c
+                        ? "ring-2 ring-offset-2 ring-offset-background ring-foreground scale-110"
+                        : "hover:scale-105",
+                    )}
+                    style={{ background: c }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="w-full sm:w-auto"
+            >
+              {saving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              Dodaj tag
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
       {tagList.length === 0 ? (
-        <div className="text-zinc-500 text-sm text-center py-8">Brak tagów.</div>
+        <div className="rounded-xl border bg-card/40 p-10 text-center">
+          <TagIcon
+            className="size-8 mx-auto text-muted-foreground/40 mb-3"
+            strokeWidth={1.4}
+          />
+          <p className="text-muted-foreground text-sm">Brak tagów.</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {tagList.map((tag) => (
             <div
               key={tag.id}
-              className="flex items-center gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3"
+              className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3"
             >
               <span
-                className="w-3 h-3 rounded-full shrink-0"
+                className="size-3 rounded-full shrink-0 ring-1 ring-inset ring-foreground/10"
                 style={{ background: tag.color }}
               />
-              <span className="flex-1 font-medium text-sm">{tag.name}</span>
-              <span className="text-xs text-zinc-400 font-mono">{tag.slug}</span>
-              <button
-                onClick={() => handleDelete(tag.id)}
-                className="text-xs text-zinc-400 hover:text-red-500 transition-colors ml-2"
+              <span className="flex-1 font-medium text-sm truncate">{tag.name}</span>
+              <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
+                {tag.slug}
+              </span>
+              <Button
+                onClick={() => setPendingDelete(tag)}
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                aria-label={`Usuń tag ${tag.name}`}
               >
-                Usuń
-              </button>
+                <Trash2 className="size-3.5" />
+              </Button>
             </div>
           ))}
         </div>
       )}
+
+      <Dialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Usunąć tag?</DialogTitle>
+            <DialogDescription>
+              Tag <strong className="text-foreground">{pendingDelete?.name}</strong> zostanie usunięty. Powiązania ze zdjęciami też.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDelete(null)}>
+              Anuluj
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              <Trash2 />
+              Usuń tag
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

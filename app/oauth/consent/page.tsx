@@ -1,18 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ArrowLeft, Loader2, Shield } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/auth/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Logo } from "@/components/brand/Logo";
 
 type AuthorizationDetails = {
-  client: {
-    name: string;
-  };
+  client: { name: string };
   redirect_uri: string;
   scope: string | null;
 };
 
 export default function OAuthConsentPage() {
+  return (
+    <Suspense fallback={<ConsentShell loading />}>
+      <ConsentInner />
+    </Suspense>
+  );
+}
+
+function ConsentShell({
+  loading,
+  children,
+}: {
+  loading?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <main className="bg-aurora min-h-screen flex flex-col">
+      <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
+        <Logo size="md" />
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/">
+            <ArrowLeft />
+            <span className="hidden sm:inline">Strona główna</span>
+          </Link>
+        </Button>
+      </header>
+      <section className="flex-1 flex items-center justify-center px-4 py-10">
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Wczytywanie…
+          </div>
+        ) : (
+          children
+        )}
+      </section>
+    </main>
+  );
+}
+
+function ConsentInner() {
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
   const authorizationId = searchParams.get("authorization_id");
@@ -79,9 +122,7 @@ export default function OAuthConsentPage() {
     const { data, error: decisionError } = await action(authorizationId);
 
     if (decisionError || !data?.redirect_url) {
-      setError(
-        decisionError?.message ?? "Failed to complete authorization.",
-      );
+      setError(decisionError?.message ?? "Failed to complete authorization.");
       setSubmitting(null);
       return;
     }
@@ -90,66 +131,97 @@ export default function OAuthConsentPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow space-y-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">OAuth consent</h1>
-          <p className="text-sm text-zinc-500">
-            Confirm access for a third-party application to your account.
-          </p>
-        </div>
-
-        {loading ? (
-          <p className="text-sm text-zinc-500">
-            Loading authorization details...
-          </p>
-        ) : error ? (
-          <p className="text-sm text-red-600">{error}</p>
-        ) : details ? (
-          <>
-            <div className="rounded-xl border border-zinc-200 p-4 text-sm space-y-2">
-              <p>
-                <span className="font-medium">Client:</span>{" "}
-                {details.client.name}
-              </p>
-              <p className="break-all">
-                <span className="font-medium">Redirect URI:</span>{" "}
-                {details.redirect_uri}
+    <ConsentShell>
+      <Card className="w-full max-w-lg bg-card/60 backdrop-blur-md">
+        <CardContent className="p-6 sm:p-8 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-brand/15 ring-1 ring-brand/30 flex items-center justify-center">
+              <Shield className="size-5 text-brand" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Zezwolenie OAuth</h1>
+              <p className="text-sm text-muted-foreground">
+                Potwierdź dostęp aplikacji zewnętrznej do Twojego konta.
               </p>
             </div>
+          </div>
 
-            {scopeList.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Requested permissions:</p>
-                <ul className="list-disc pl-5 text-sm text-zinc-700 space-y-1">
-                  {scopeList.map((scope) => (
-                    <li key={scope}>{scope}</li>
-                  ))}
-                </ul>
+          {loading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Wczytywanie szczegółów autoryzacji…
+            </div>
+          ) : error ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              {error}
+            </div>
+          ) : details ? (
+            <>
+              <div className="rounded-xl border bg-card/60 p-4 text-sm space-y-2">
+                <p>
+                  <span className="font-medium text-muted-foreground">Klient:</span>{" "}
+                  {details.client.name}
+                </p>
+                <p className="break-all">
+                  <span className="font-medium text-muted-foreground">Redirect URI:</span>{" "}
+                  <span className="font-mono text-xs">{details.redirect_uri}</span>
+                </p>
               </div>
-            )}
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => handleDecision("deny")}
-                disabled={submitting !== null}
-                className="flex-1 rounded-xl border border-zinc-300 py-2.5 text-sm font-medium hover:bg-zinc-100 disabled:opacity-50"
-              >
-                {submitting === "deny" ? "Denying..." : "Deny"}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDecision("approve")}
-                disabled={submitting !== null}
-                className="flex-1 rounded-xl bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
-              >
-                {submitting === "approve" ? "Approving..." : "Approve"}
-              </button>
-            </div>
-          </>
-        ) : null}
-      </div>
-    </div>
+              {scopeList.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Wymagane uprawnienia:</p>
+                  <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                    {scopeList.map((scope) => (
+                      <li key={scope} className="font-mono text-xs">
+                        {scope}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => handleDecision("deny")}
+                  disabled={submitting !== null}
+                  size="lg"
+                  className="flex-1"
+                >
+                  {submitting === "deny" ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Odmawiam…
+                    </>
+                  ) : (
+                    "Odmów"
+                  )}
+                </Button>
+                <Button
+                  variant="brand"
+                  onClick={() => handleDecision("approve")}
+                  disabled={submitting !== null}
+                  size="lg"
+                  className="flex-1"
+                >
+                  {submitting === "approve" ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Zatwierdzam…
+                    </>
+                  ) : (
+                    "Zatwierdź"
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : null}
+        </CardContent>
+      </Card>
+    </ConsentShell>
   );
 }
