@@ -6,6 +6,9 @@ import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/server";
 
 const patchSchema = z.object({
+  title: z.string().max(200).nullable().optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
   difficulty: z.enum(["easy", "medium", "hard"]).optional(),
   tagIds: z.array(z.string().uuid()).optional(),
 });
@@ -22,10 +25,16 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { difficulty, tagIds } = parsed.data;
+  const { title, lat, lng, difficulty, tagIds } = parsed.data;
 
-  if (difficulty !== undefined) {
-    await db.update(photos).set({ difficulty, updatedAt: new Date() }).where(eq(photos.id, id));
+  const scalarPatch: Record<string, unknown> = { updatedAt: new Date() };
+  if (title !== undefined) scalarPatch.title = title;
+  if (lat !== undefined) scalarPatch.lat = lat;
+  if (lng !== undefined) scalarPatch.lng = lng;
+  if (difficulty !== undefined) scalarPatch.difficulty = difficulty;
+
+  if (Object.keys(scalarPatch).length > 1) {
+    await db.update(photos).set(scalarPatch).where(eq(photos.id, id));
   }
 
   if (tagIds !== undefined) {
@@ -35,7 +44,8 @@ export async function PATCH(
     }
   }
 
-  return NextResponse.json({ ok: true });
+  const [updated] = await db.select().from(photos).where(eq(photos.id, id));
+  return NextResponse.json(updated ?? { ok: true });
 }
 
 export async function DELETE(

@@ -12,27 +12,48 @@ interface ResultPoint {
   actualLng: number;
 }
 
+export interface ResultsMapPhoto {
+  photoId: string;
+  tileBaseUrl: string;
+  heading: number;
+  tileLevels: Array<{ faceSize: number; nbTiles: number }>;
+}
+
 interface Props {
   results: ResultPoint[];
+  photos?: ResultsMapPhoto[];
+  onPhotoClick?: (index: number) => void;
   mapStyle?: MapStyle;
   className?: string;
 }
 
-function makeNumberEl(n: number, bg: string): HTMLElement {
-  const el = document.createElement("div");
-  el.style.cssText = [
+function makeNumberEl(n: number, bg: string, clickable = false): HTMLElement {
+  const circle = document.createElement("div");
+  circle.style.cssText = [
     "width:22px;height:22px;border-radius:50%;",
     `background:${bg};border:2px solid white;`,
     "display:flex;align-items:center;justify-content:center;",
     "color:white;font-size:11px;font-weight:700;",
     "box-shadow:0 1px 4px rgba(0,0,0,.45);",
-    "cursor:default;",
+    clickable ? "cursor:pointer;transition:transform .15s;" : "cursor:default;",
   ].join("");
-  el.textContent = String(n);
-  return el;
+  circle.textContent = String(n);
+
+  if (!clickable) return circle;
+
+  // MapLibre positions the marker by setting `transform: translate(x,y)` on the root element.
+  // Applying scale or transition directly to that element causes lag during pan and jumps on hover.
+  // Fix: outer wrapper is the MapLibre anchor (no transform/transition); inner circle handles visuals.
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "width:22px;height:22px;";
+  wrapper.title = "Kliknij, aby zobaczyć panoramę";
+  circle.addEventListener("mouseenter", () => { circle.style.transform = "scale(1.25)"; });
+  circle.addEventListener("mouseleave", () => { circle.style.transform = ""; });
+  wrapper.appendChild(circle);
+  return wrapper;
 }
 
-export default function ResultsMap({ results, mapStyle = "street", className }: Props) {
+export default function ResultsMap({ results, photos, onPhotoClick, mapStyle = "street", className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,12 +109,17 @@ export default function ResultsMap({ results, mapStyle = "street", className }: 
 
       results.forEach((r, i) => {
         const n = i + 1;
+        const hasPhoto = !!(photos?.[i] && onPhotoClick);
 
         new maplibregl.Marker({ element: makeNumberEl(n, "#ef4444") })
           .setLngLat([r.guessLng, r.guessLat])
           .addTo(map);
 
-        new maplibregl.Marker({ element: makeNumberEl(n, "#22c55e") })
+        const actualEl = makeNumberEl(n, "#22c55e", hasPhoto);
+        if (hasPhoto) {
+          actualEl.addEventListener("click", () => onPhotoClick!(i));
+        }
+        new maplibregl.Marker({ element: actualEl })
           .setLngLat([r.actualLng, r.actualLat])
           .addTo(map);
 

@@ -158,3 +158,77 @@
 .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
   display: none;
 }
+
+/* ── MapLibre popup — dark theme override ─────────────────────────────────── */
+.maplibregl-popup-content {
+  background: var(--color-popover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 12px 40px -8px rgb(0 0 0 / 0.6),
+    0 0 0 0.5px rgb(255 255 255 / 0.05);
+  padding: 0;
+  overflow: hidden;
+  min-width: 240px;
+  font-family: var(--font-sans);
+  color: var(--color-foreground);
+}
+
+.maplibregl-popup-close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 0;
+  color: var(--color-muted-foreground);
+  background: rgb(0 0 0 / 0.45);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  transition: background 150ms, color 150ms;
+  backdrop-filter: blur(4px);
+}
+
+.maplibregl-popup-close-button::after {
+  content: '✕';
+  font-size: 12px;
+  line-height: 1;
+  color: #fff;
+}
+
+.maplibregl-popup-close-button:hover {
+  background: rgb(0 0 0 / 0.7);
+}
+
+/* Arrow tip — all anchor directions */
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--color-popover);
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--color-popover);
+}
+
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--color-popover);
+}
+
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--color-popover);
+}
+
+/* Hover feedback on popup action elements */
+.maplibregl-popup-content a:hover,
+.maplibregl-popup-content [data-edit-photo-id]:hover {
+  opacity: 0.8;
+}

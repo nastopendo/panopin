@@ -10,9 +10,11 @@ import {
   Loader2,
   Target,
   Trophy,
+  X,
 } from "lucide-react";
 import type { TileManifest } from "@/components/panorama/Viewer";
 import type { GuessResult } from "@/components/map/GuessMap";
+import type { ResultsMapPhoto } from "@/components/map/ResultsMap";
 import type { MapStyle } from "@/lib/map-styles";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -100,6 +102,7 @@ export default function RoundPage() {
   const [totalScore, setTotalScore] = useState<number | null>(null);
   const [topPercent, setTopPercent] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedPhotoIdx, setSelectedPhotoIdx] = useState<number | null>(null);
 
   const stepStartRef = useRef<number>(0);
 
@@ -286,10 +289,25 @@ export default function RoundPage() {
           <Card className="p-2 overflow-hidden h-[360px] bg-card/60">
             <ResultsMap
               results={results}
+              photos={photos}
+              onPhotoClick={setSelectedPhotoIdx}
               mapStyle={mapSettings.mapStyle}
               className="w-full h-full rounded-lg overflow-hidden"
             />
+            <p className="text-[10px] text-muted-foreground text-center mt-1.5 select-none">
+              Kliknij zielony pin, aby zobaczyć panoramę
+            </p>
           </Card>
+
+          {selectedPhotoIdx !== null && results[selectedPhotoIdx] && photos[selectedPhotoIdx] && (
+            <PhotoModal
+              photo={photos[selectedPhotoIdx]}
+              result={results[selectedPhotoIdx]}
+              stepNumber={selectedPhotoIdx + 1}
+              totalSteps={photos.length}
+              onClose={() => setSelectedPhotoIdx(null)}
+            />
+          )}
 
           <div className="space-y-2">
             {results.map((r, i) => (
@@ -439,6 +457,80 @@ function StepDots({
           )}
         />
       ))}
+    </div>
+  );
+}
+
+function PhotoModal({
+  photo,
+  result,
+  stepNumber,
+  totalSteps,
+  onClose,
+}: {
+  photo: ResultsMapPhoto;
+  result: StepResult;
+  stepNumber: number;
+  totalSteps: number;
+  onClose: () => void;
+}) {
+  const tilesManifest: TileManifest = {
+    photoId: photo.photoId,
+    baseUrl: photo.tileBaseUrl,
+    heading: photo.heading,
+    levels: photo.tileLevels,
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex flex-col w-full h-full max-w-3xl mx-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0 bg-black/60">
+          <span className="text-white/80 text-sm font-medium">
+            Panorama {stepNumber} z {totalSteps}
+          </span>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Zamknij"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* Panorama */}
+        <div className="flex-1 min-h-0">
+          <PanoramaViewer
+            key={photo.photoId}
+            tilesManifest={tilesManifest}
+            className="w-full h-full"
+          />
+        </div>
+
+        {/* Info bar */}
+        <div className="shrink-0 bg-black/70 backdrop-blur px-4 py-3 flex items-center gap-4">
+          <div className="size-8 rounded-full bg-success/20 border border-success/40 flex items-center justify-center text-xs font-bold text-success shrink-0">
+            {stepNumber}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={cn("font-semibold text-sm", scoreColor(result.score))}>
+              {scoreLabel(result.score)} · {result.score.toLocaleString("pl-PL")} pkt
+            </p>
+            <p className="text-xs text-white/50">
+              {formatDistance(result.distanceM)} od celu
+              {result.timeBonus > 0 && (
+                <span className="text-success ml-1.5">+{result.timeBonus} bonus czasowy</span>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
