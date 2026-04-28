@@ -60,11 +60,19 @@ export default function GuessMap({
       attributionControl: false,
     });
 
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      "bottom-right",
+    );
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      "top-right",
+    );
 
     map.on("load", () => {
-      const el = map.getContainer().querySelector<HTMLDetailsElement>(".maplibregl-ctrl-attrib");
+      const el = map
+        .getContainer()
+        .querySelector<HTMLDetailsElement>(".maplibregl-ctrl-attrib");
       if (el) {
         el.removeAttribute("open");
         el.classList.remove("maplibregl-compact-show");
@@ -147,7 +155,11 @@ export default function GuessMap({
         id: "guess-line",
         type: "line",
         source: "guess-line",
-        paint: { "line-color": "#94a3b8", "line-width": 2, "line-dasharray": [3, 3] },
+        paint: {
+          "line-color": "#94a3b8",
+          "line-width": 2,
+          "line-dasharray": [3, 3],
+        },
       });
 
       // Fit map to show both pins
@@ -155,9 +167,11 @@ export default function GuessMap({
         .extend([gPos.lng, gPos.lat])
         .extend([actualLocation.lng, actualLocation.lat]);
       map.fitBounds(bounds, {
-        padding: { top: 60, right: 60, bottom: 180, left: 60 },
-        maxZoom: 13,
-        duration: 1200,
+        padding: 140,
+        maxZoom: 50,
+        minZoom: 5,
+        duration: 900,
+        linear: true,
       });
     }
   }, [actualLocation]);
