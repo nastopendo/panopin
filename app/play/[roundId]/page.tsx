@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Loader2,
-  MapPin,
   Target,
   Trophy,
 } from "lucide-react";
@@ -375,7 +374,7 @@ export default function RoundPage() {
           </div>
         </div>
 
-        <div className="flex-[2] relative border-t md:border-t-0 md:border-l border-border min-h-[240px] md:min-h-0">
+        <div className="flex-[2] relative border-t md:border-t-0 md:border-l border-border min-h-[260px] md:min-h-0">
           <GuessMap
             onConfirm={handleGuess}
             disabled={phase === "revealed" || submitting}
@@ -391,13 +390,6 @@ export default function RoundPage() {
             className="w-full h-full"
           />
 
-          {phase === "playing" && !submitting && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-1.5 rounded-full bg-background/80 backdrop-blur px-3 py-1.5 text-xs text-muted-foreground border pointer-events-none">
-              <MapPin className="size-3.5 text-brand" />
-              Postaw pinezkę i potwierdź
-            </div>
-          )}
-
           {submitting && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm z-20">
               <div className="flex items-center gap-2 text-sm">
@@ -406,17 +398,17 @@ export default function RoundPage() {
               </div>
             </div>
           )}
+
+          {phase === "revealed" && currentResult && (
+            <ResultOverlay
+              result={currentResult}
+              stepNumber={step + 1}
+              totalSteps={photos.length}
+              onNext={handleNext}
+            />
+          )}
         </div>
       </div>
-
-      {phase === "revealed" && currentResult && (
-        <ResultOverlay
-          result={currentResult}
-          stepNumber={step + 1}
-          totalSteps={photos.length}
-          onNext={handleNext}
-        />
-      )}
     </div>
   );
 }
@@ -467,45 +459,41 @@ function ResultOverlay({
   return (
     <div
       className="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none z-20 px-3"
-      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
       <div
         className={cn(
-          "bg-card/95 backdrop-blur-xl border rounded-2xl shadow-2xl pointer-events-auto w-full max-w-md",
-          "animate-in slide-in-from-bottom-4 fade-in duration-300",
+          "bg-card/95 backdrop-blur-xl border rounded-2xl shadow-xl pointer-events-auto w-full max-w-md",
+          "animate-in slide-in-from-bottom-3 fade-in duration-250",
         )}
       >
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="px-4 py-3 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {scoreLabel(result.score)}
               </p>
-              <p className={cn("text-3xl font-bold tabular-nums", scoreColor(result.score))}>
-                {result.score.toLocaleString("pl-PL")}{" "}
-                <span className="text-sm font-medium text-muted-foreground">pkt</span>
-              </p>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {formatDistance(result.distanceM)} od celu
-              </p>
-            </div>
-            <div className="text-right text-xs text-muted-foreground space-y-0.5 shrink-0">
-              <div className="flex items-center justify-end gap-1">
-                <span>Bazowe</span>
-                <span className="tabular-nums text-foreground/80">
-                  {result.baseScore.toLocaleString("pl-PL")}
+              <div className="flex items-baseline gap-1.5">
+                <span className={cn("text-2xl font-bold tabular-nums", scoreColor(result.score))}>
+                  {result.score.toLocaleString("pl-PL")}
                 </span>
+                <span className="text-xs text-muted-foreground">pkt</span>
               </div>
-              {result.timeBonus > 0 && (
-                <div className="flex items-center justify-end gap-1">
-                  <span>Czas</span>
-                  <span className="tabular-nums text-success">+{result.timeBonus}</span>
-                </div>
-              )}
+            </div>
+            <div className="text-right text-xs text-muted-foreground shrink-0">
+              <div className="font-medium text-foreground/80">
+                {formatDistance(result.distanceM)} od celu
+              </div>
+              <div className="flex items-center justify-end gap-1 mt-0.5">
+                <span>Bazowe {result.baseScore.toLocaleString("pl-PL")}</span>
+                {result.timeBonus > 0 && (
+                  <span className="text-success">+{result.timeBonus}s</span>
+                )}
+              </div>
             </div>
           </div>
 
-          <Button onClick={onNext} variant="brand" size="lg" className="w-full">
+          <Button onClick={onNext} variant="brand" size="default" className="w-full h-10">
             {isLast ? (
               <>
                 <Trophy />

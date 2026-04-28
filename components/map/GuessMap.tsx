@@ -154,7 +154,11 @@ export default function GuessMap({
       const bounds = new maplibregl.LngLatBounds()
         .extend([gPos.lng, gPos.lat])
         .extend([actualLocation.lng, actualLocation.lat]);
-      map.fitBounds(bounds, { padding: 80, maxZoom: 13, duration: 1200 });
+      map.fitBounds(bounds, {
+        padding: { top: 60, right: 60, bottom: 180, left: 60 },
+        maxZoom: 13,
+        duration: 1200,
+      });
     }
   }, [actualLocation]);
 
