@@ -99,9 +99,6 @@ export default async function HomePage() {
               <ArrowRight />
             </Link>
           </Button>
-          <Button asChild size="xl" variant="outline" className="w-full sm:w-auto">
-            <Link href="/play/demo">Wypróbuj demo</Link>
-          </Button>
         </div>
 
         {stats && stats.panoramas > 0 && (
@@ -148,9 +145,6 @@ export default async function HomePage() {
         <div className="flex items-center gap-4">
           <Link href="/leaderboard" className="hover:text-foreground transition-colors">
             Ranking
-          </Link>
-          <Link href="/play/demo" className="hover:text-foreground transition-colors">
-            Demo
           </Link>
         </div>
       </footer>
