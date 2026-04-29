@@ -3,6 +3,8 @@
 Open-source GeoGuessr-style game built around custom 360deg panoramas with GPS data.
 Players guess each photo location on the map - the closer the guess, the more points they get.
 
+**Play solo or challenge friends** — create a tournament lobby, share a link, and compete in real-time on the same set of panoramas. Live scores update as everyone plays.
+
 ## Stack
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript** + **Tailwind v4**
@@ -31,10 +33,12 @@ pnpm install
 
 1. Create a new Supabase project
 2. Run migrations in this order in **SQL Editor**:
-   - `supabase/migrations/001_rls_policies.sql`
    - `drizzle/migrations/0000_amusing_gladiator.sql`
    - `drizzle/migrations/0001_natural_ultimo.sql`
    - `drizzle/migrations/0002_little_doomsday.sql`
+   - `drizzle/migrations/0003_tournaments.sql`
+   - `supabase/migrations/001_rls_policies.sql`
+   - `supabase/migrations/002_tournaments_rls.sql`
 3. Enable anonymous sign-in: **Authentication -> Providers -> Anonymous**
 4. (Optional) Add Google OAuth: **Authentication -> Providers -> Google** - requires `Client ID` and `Client Secret`
 5. Set your user as admin:
@@ -92,6 +96,25 @@ Open [http://localhost:3000](http://localhost:3000).
 3. Upload a 360deg photo with GPS metadata (EXIF lat/lng)
 4. Wait for tile generation (~10-30s)
 5. Play at `/play` 🎉
+
+## Features
+
+### Solo game (`/play`)
+Pick difficulty and optional tags, then guess the location of 5 random panoramas.
+Score is calculated server-side: exponential decay by distance + time bonus (up to 30 s).
+After finishing, see your result on the map and compare to the global leaderboard.
+
+### Tournaments (`/tournament`)
+- **Create** a lobby with optional difficulty/tag filters — get a 6-character join code
+- **Share** the code or copy a direct invite link
+- **Join** by entering the code (or clicking the link) and choosing a display name
+- **Host starts** the game — all players get the same 5 panoramas
+- **Play at your own pace** — live scores update in the header as everyone guesses
+- **Results screen** shows a podium, full leaderboard, and a map of your own guesses
+- Host can force-end the tournament at any time
+
+### Admin
+Upload panoramas at `/admin/upload`. Tiles are generated in-browser (WebGL worker) and uploaded directly to R2 — no server load. Manage difficulty, tags, and map settings at `/admin/*`.
 
 ## Commands
 

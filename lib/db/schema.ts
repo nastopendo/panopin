@@ -9,6 +9,8 @@ import {
   jsonb,
   primaryKey,
   char,
+  boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true });
@@ -23,6 +25,12 @@ export const photoStatusEnum = pgEnum("photo_status", [
   "processing",
   "published",
   "rejected",
+]);
+
+export const tournamentStatusEnum = pgEnum("tournament_status", [
+  "lobby",
+  "playing",
+  "finished",
 ]);
 
 // ─── Tables ───────────────────────────────────────────────────────────────────
@@ -99,6 +107,43 @@ export const mapSettings = pgTable("map_settings", {
   updatedAt: timestamptz("updated_at").notNull().defaultNow(),
 });
 
+export const tournaments = pgTable("tournaments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  hostId: uuid("host_id")
+    .references(() => profiles.id)
+    .notNull(),
+  status: tournamentStatusEnum("status").default("lobby").notNull(),
+  photoIds: jsonb("photo_ids").$type<string[]>(),
+  filterTagIds: jsonb("filter_tag_ids").$type<string[]>(),
+  filterDifficulty: difficultyEnum("filter_difficulty"),
+  startedAt: timestamptz("started_at"),
+  finishedAt: timestamptz("finished_at"),
+  createdAt: timestamptz("created_at").defaultNow().notNull(),
+});
+
+export const tournamentPlayers = pgTable(
+  "tournament_players",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tournamentId: uuid("tournament_id")
+      .references(() => tournaments.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => profiles.id)
+      .notNull(),
+    roundId: uuid("round_id").references(() => rounds.id),
+    displayName: text("display_name").notNull(),
+    isHost: boolean("is_host").default(false).notNull(),
+    currentScore: integer("current_score").default(0).notNull(),
+    finishedAt: timestamptz("finished_at"),
+    joinedAt: timestamptz("joined_at").defaultNow().notNull(),
+  },
+  (t) => [
+    unique("tournament_players_tournament_user").on(t.tournamentId, t.userId),
+  ],
+);
+
 export const guesses = pgTable("guesses", {
   id: uuid("id").primaryKey().defaultRandom(),
   roundId: uuid("round_id")
@@ -150,6 +195,26 @@ export const guessesRelations = relations(guesses, ({ one }) => ({
   photo: one(photos, { fields: [guesses.photoId], references: [photos.id] }),
 }));
 
+export const tournamentsRelations = relations(tournaments, ({ one, many }) => ({
+  host: one(profiles, { fields: [tournaments.hostId], references: [profiles.id] }),
+  players: many(tournamentPlayers),
+}));
+
+export const tournamentPlayersRelations = relations(tournamentPlayers, ({ one }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentPlayers.tournamentId],
+    references: [tournaments.id],
+  }),
+  user: one(profiles, {
+    fields: [tournamentPlayers.userId],
+    references: [profiles.id],
+  }),
+  round: one(rounds, {
+    fields: [tournamentPlayers.roundId],
+    references: [rounds.id],
+  }),
+}));
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Profile = typeof profiles.$inferSelect;
@@ -157,5 +222,8 @@ export type Photo = typeof photos.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type Round = typeof rounds.$inferSelect;
 export type Guess = typeof guesses.$inferSelect;
+export type Tournament = typeof tournaments.$inferSelect;
+export type TournamentPlayer = typeof tournamentPlayers.$inferSelect;
 export type Difficulty = "easy" | "medium" | "hard";
 export type PhotoStatus = "draft" | "processing" | "published" | "rejected";
+export type TournamentStatus = "lobby" | "playing" | "finished";

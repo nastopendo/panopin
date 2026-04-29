@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { count, eq, isNotNull } from "drizzle-orm";
-import { ArrowRight, Compass, MapPin, Sparkles, Trophy } from "lucide-react";
+import { ArrowRight, Compass, MapPin, Sparkles, Trophy, Users } from "lucide-react";
 import { db } from "@/lib/db/client";
 import { photos, rounds } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
@@ -98,6 +98,12 @@ export default async function HomePage() {
             <Link href="/play">
               Zagraj teraz
               <ArrowRight />
+            </Link>
+          </Button>
+          <Button asChild size="xl" variant="outline" className="w-full sm:w-auto">
+            <Link href="/tournament">
+              <Users className="size-5" />
+              Turniej ze znajomymi
             </Link>
           </Button>
         </div>

@@ -1,9 +1,70 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
-import { guesses, photos, rounds } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { guesses, photos, rounds, tournamentPlayers } from "@/lib/db/schema";
+import { eq, and, sum, inArray } from "drizzle-orm";
 import { scoreGuess } from "@/lib/scoring";
+
+// ─── GET — guesses for a completed round (public, no auth needed) ─────────────
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: roundId } = await params;
+
+  const [round] = await db
+    .select({ id: rounds.id, completedAt: rounds.completedAt, photoIds: rounds.photoIds })
+    .from(rounds)
+    .where(eq(rounds.id, roundId))
+    .limit(1);
+
+  if (!round) return NextResponse.json({ error: "round not found" }, { status: 404 });
+  if (!round.completedAt) {
+    return NextResponse.json({ error: "round not finished" }, { status: 403 });
+  }
+
+  const roundGuesses = await db
+    .select({
+      sequence: guesses.sequence,
+      guessLat: guesses.guessLat,
+      guessLng: guesses.guessLng,
+      actualLat: guesses.actualLat,
+      actualLng: guesses.actualLng,
+      distanceM: guesses.distanceM,
+      score: guesses.score,
+    })
+    .from(guesses)
+    .where(eq(guesses.roundId, roundId))
+    .orderBy(guesses.sequence);
+
+  const photoIds = round.photoIds as string[];
+  const photoRows = await db
+    .select({
+      id: photos.id,
+      tileBaseUrl: photos.tileBaseUrl,
+      heading: photos.heading,
+      tileManifest: photos.tileManifest,
+    })
+    .from(photos)
+    .where(inArray(photos.id, photoIds));
+
+  const photoMap = new Map(photoRows.map((p) => [p.id, p]));
+  const orderedPhotos = photoIds
+    .map((id) => photoMap.get(id))
+    .filter(Boolean)
+    .map((p) => ({
+      photoId: p!.id,
+      tileBaseUrl: p!.tileBaseUrl ?? "",
+      heading: p!.heading,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tileLevels: (p!.tileManifest as any)?.levels ?? [],
+    }));
+
+  return NextResponse.json({ guesses: roundGuesses, photos: orderedPhotos });
+}
+
+// ─── POST — submit a guess ────────────────────────────────────────────────────
 
 const BodySchema = z.object({
   photoId: z.string().uuid(),
@@ -27,7 +88,6 @@ export async function POST(
 
   const { photoId, sequenceNumber, guessLat, guessLng, elapsedMs } = parse.data;
 
-  // Verify round exists and is open
   const [round] = await db
     .select({ id: rounds.id, photoIds: rounds.photoIds, completedAt: rounds.completedAt })
     .from(rounds)
@@ -37,13 +97,11 @@ export async function POST(
   if (!round) return NextResponse.json({ error: "round not found" }, { status: 404 });
   if (round.completedAt) return NextResponse.json({ error: "round already finished" }, { status: 409 });
 
-  // Verify the photo belongs to this round at the correct sequence
   const expectedPhotoId = round.photoIds[sequenceNumber - 1];
   if (expectedPhotoId !== photoId) {
     return NextResponse.json({ error: "photo not in round at given sequence" }, { status: 422 });
   }
 
-  // Check this sequence hasn't been submitted already
   const [existing] = await db
     .select({ id: guesses.id })
     .from(guesses)
@@ -52,7 +110,6 @@ export async function POST(
 
   if (existing) return NextResponse.json({ error: "already submitted" }, { status: 409 });
 
-  // Fetch photo location + difficulty
   const [photo] = await db
     .select({ lat: photos.lat, lng: photos.lng, difficulty: photos.difficulty })
     .from(photos)
@@ -61,7 +118,6 @@ export async function POST(
 
   if (!photo) return NextResponse.json({ error: "photo not found" }, { status: 404 });
 
-  // Server-side scoring
   const result = scoreGuess({
     guessLat,
     guessLng,
@@ -83,6 +139,25 @@ export async function POST(
     actualLat: photo.lat,
     actualLng: photo.lng,
   });
+
+  // If this round belongs to a tournament, push live score
+  const [tplayer] = await db
+    .select({ id: tournamentPlayers.id })
+    .from(tournamentPlayers)
+    .where(eq(tournamentPlayers.roundId, roundId))
+    .limit(1);
+
+  if (tplayer) {
+    const [agg] = await db
+      .select({ total: sum(guesses.score) })
+      .from(guesses)
+      .where(eq(guesses.roundId, roundId));
+
+    await db
+      .update(tournamentPlayers)
+      .set({ currentScore: Number(agg?.total ?? 0) })
+      .where(eq(tournamentPlayers.id, tplayer.id));
+  }
 
   return NextResponse.json({
     distanceM: result.distanceM,

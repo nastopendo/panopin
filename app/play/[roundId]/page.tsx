@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -10,8 +10,10 @@ import {
   Loader2,
   Target,
   Trophy,
+  Users,
   X,
 } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/auth/client";
 import type { TileManifest } from "@/components/panorama/Viewer";
 import type { GuessResult } from "@/components/map/GuessMap";
 import type { ResultsMapPhoto } from "@/components/map/ResultsMap";
@@ -59,6 +61,14 @@ interface MapSettings {
 
 type Phase = "loading" | "error" | "playing" | "revealed" | "finished";
 
+interface TournamentPlayerScore {
+  id: string;
+  userId: string;
+  displayName: string;
+  currentScore: number;
+  finishedAt: string | null;
+}
+
 const DEFAULT_MAP_SETTINGS: MapSettings = {
   centerLat: 52.0,
   centerLng: 19.5,
@@ -91,6 +101,9 @@ function scoreLabel(score: number): string {
 
 export default function RoundPage() {
   const { roundId } = useParams<{ roundId: string }>();
+  const searchParams = useSearchParams();
+  const tournamentCode = searchParams.get("tournament");
+  const router = useRouter();
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [errorMsg, setErrorMsg] = useState("");
@@ -104,7 +117,49 @@ export default function RoundPage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState<number | null>(null);
 
+  const [tournamentPlayers, setTournamentPlayers] = useState<TournamentPlayerScore[]>([]);
+
   const stepStartRef = useRef<number>(0);
+
+  // Load tournament state + subscribe to live score updates
+  useEffect(() => {
+    if (!tournamentCode) return;
+    let channel: ReturnType<ReturnType<typeof createSupabaseBrowserClient>["channel"]> | null =
+      null;
+
+    async function initTournament() {
+      const res = await fetch(`/api/tournaments/${tournamentCode}`).catch(() => null);
+      if (!res?.ok) return;
+      const data = await res.json().catch(() => null);
+      if (!data) return;
+
+      const supabase = createSupabaseBrowserClient();
+      channel = supabase
+        .channel(`tournament-play-${data.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "tournament_players",
+            filter: `tournament_id=eq.${data.id}`,
+          },
+          async () => {
+            const r = await fetch(`/api/tournaments/${tournamentCode}`).catch(() => null);
+            if (!r?.ok) return;
+            const d = await r.json().catch(() => null);
+            if (d) setTournamentPlayers(d.players ?? []);
+          },
+        )
+        .subscribe();
+      setTournamentPlayers(data.players ?? []);
+    }
+
+    initTournament();
+    return () => {
+      channel?.unsubscribe();
+    };
+  }, [tournamentCode]);
 
   useEffect(() => {
     Promise.all([
@@ -178,9 +233,17 @@ export default function RoundPage() {
       try {
         const res = await fetch(`/api/rounds/${roundId}/finish`, { method: "POST" });
         const data = await res.json();
+        if (tournamentCode) {
+          router.push(`/tournament/${tournamentCode}`);
+          return;
+        }
         setTotalScore(data.totalScore);
         setTopPercent(data.topPercent ?? null);
       } catch {
+        if (tournamentCode) {
+          router.push(`/tournament/${tournamentCode}`);
+          return;
+        }
         const localTotal =
           results.reduce((s, r) => s + r.score, 0) + (currentResult?.score ?? 0);
         setTotalScore(localTotal);
@@ -369,7 +432,10 @@ export default function RoundPage() {
           <Logo size="sm" showWordmark={false} />
           <StepDots total={photos.length} current={step} done={results.length} />
         </div>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          {tournamentCode && tournamentPlayers.length > 0 && (
+            <TournamentScoreRibbon players={tournamentPlayers} />
+          )}
           <span className="text-muted-foreground hidden sm:inline">Wynik</span>
           <span className="font-semibold tabular-nums">
             {runningScore.toLocaleString("pl-PL")}
@@ -531,6 +597,28 @@ function PhotoModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TournamentScoreRibbon({
+  players,
+}: {
+  players: TournamentPlayerScore[];
+}) {
+  const sorted = [...players].sort((a, b) => b.currentScore - a.currentScore).slice(0, 3);
+  return (
+    <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
+      <Users className="size-3 shrink-0" />
+      {sorted.map((p, i) => (
+        <span key={p.id} className="flex items-center gap-0.5">
+          {i > 0 && <span className="text-border mx-0.5">·</span>}
+          <span className="font-medium text-foreground/70 truncate max-w-[60px]">
+            {p.displayName.split(" ")[0]}
+          </span>
+          <span className="tabular-nums">{p.currentScore.toLocaleString("pl-PL")}</span>
+        </span>
+      ))}
     </div>
   );
 }
