@@ -155,10 +155,10 @@ async function getAnalytics() {
       (returningResult[0] as { val: unknown })?.val ?? 0,
     ),
     totalTournaments: totalTournamentsResult[0].v,
-    roundsPerDay: roundsPerDayResult as unknown as RoundPerDay[],
-    scoreDist: scoreDistResult as unknown as ScoreBucket[],
-    topPhotos: topPhotosResult as unknown as TopPhoto[],
-    tagStats: tagStatsResult as unknown as TagStat[],
+    roundsPerDay: [...roundsPerDayResult] as unknown as RoundPerDay[],
+    scoreDist: [...scoreDistResult] as unknown as ScoreBucket[],
+    topPhotos: [...topPhotosResult] as unknown as TopPhoto[],
+    tagStats: [...tagStatsResult] as unknown as TagStat[],
   };
 }
 
