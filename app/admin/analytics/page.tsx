@@ -287,10 +287,29 @@ const SCORE_LABELS: Record<number, string> = {
   5: "25 000+",
 };
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 30;
+// Run close to Supabase eu-west-1 (Ireland) — reduces cold-start connection latency
+export const preferredRegion = ["dub1", "lhr1", "cdg1"];
+
 // ---- page ----------------------------------------------------------------
 
 export default async function AdminAnalyticsPage() {
-  const s = await getAnalytics();
+  let s: Awaited<ReturnType<typeof getAnalytics>>;
+  try {
+    s = await getAnalytics();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return (
+      <div className="space-y-4 max-w-6xl">
+        <h1 className="text-2xl font-bold tracking-tight">Analityka</h1>
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <p className="font-medium">Nie udało się pobrać danych</p>
+          <p className="mt-1 font-mono text-xs opacity-70">{msg}</p>
+        </div>
+      </div>
+    );
+  }
 
   const completionRate =
     s.totalRounds > 0
