@@ -24,6 +24,8 @@ interface Props {
   /** Map visual style */
   mapStyle?: MapStyle;
   className?: string;
+  /** Called whenever the pending pin changes (before confirm) */
+  onPinChange?: (pin: GuessResult | null) => void;
 }
 
 export default function GuessMap({
@@ -35,6 +37,7 @@ export default function GuessMap({
   initialZoom = 5,
   mapStyle = "street",
   className,
+  onPinChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -42,7 +45,12 @@ export default function GuessMap({
   const actualMarkerRef = useRef<maplibregl.Marker | null>(null);
   // Use a ref for disabled so the click handler never captures a stale value
   const disabledRef = useRef(disabled);
+  const onPinChangeRef = useRef(onPinChange);
   const [pin, setPin] = useState<GuessResult | null>(null);
+
+  useEffect(() => {
+    onPinChangeRef.current = onPinChange;
+  }, [onPinChange]);
 
   useEffect(() => {
     disabledRef.current = disabled;
@@ -91,6 +99,7 @@ export default function GuessMap({
           .addTo(map);
       }
       setPin({ lat, lng });
+      onPinChangeRef.current?.({ lat, lng });
     });
 
     mapRef.current = map;
@@ -118,6 +127,7 @@ export default function GuessMap({
     if (map.getSource("guess-line")) map.removeSource("guess-line");
 
     setPin(null);
+    onPinChangeRef.current?.(null);
   }, [stepKey]);
 
   // Show actual location + line + fit bounds after guess

@@ -107,6 +107,21 @@ export const mapSettings = pgTable("map_settings", {
   updatedAt: timestamptz("updated_at").notNull().defaultNow(),
 });
 
+export const scoringSettings = pgTable("scoring_settings", {
+  id: integer("id").primaryKey(), // singleton — always id=1
+  maxDistanceM: integer("max_distance_m").notNull().default(3000),
+  timeLimitS: integer("time_limit_s").notNull().default(30),
+  maxBaseScore: integer("max_base_score").notNull().default(5000),
+  maxTimeBonus: integer("max_time_bonus").notNull().default(300),
+  scaleEasyM: integer("scale_easy_m").notNull().default(800),
+  scaleMediumM: integer("scale_medium_m").notNull().default(500),
+  scaleHardM: integer("scale_hard_m").notNull().default(300),
+  multEasy: doublePrecision("mult_easy").notNull().default(1.0),
+  multMedium: doublePrecision("mult_medium").notNull().default(1.2),
+  multHard: doublePrecision("mult_hard").notNull().default(1.5),
+  updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+});
+
 export const tournaments = pgTable("tournaments", {
   id: uuid("id").primaryKey().defaultRandom(),
   code: text("code").notNull().unique(),
@@ -227,3 +242,4 @@ export type TournamentPlayer = typeof tournamentPlayers.$inferSelect;
 export type Difficulty = "easy" | "medium" | "hard";
 export type PhotoStatus = "draft" | "processing" | "published" | "rejected";
 export type TournamentStatus = "lobby" | "playing" | "finished";
+export type ScoringSettingsRow = typeof scoringSettings.$inferSelect;

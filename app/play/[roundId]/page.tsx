@@ -7,6 +7,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
+  Clock,
   Loader2,
   Target,
   Trophy,
@@ -118,8 +119,12 @@ export default function RoundPage() {
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState<number | null>(null);
 
   const [tournamentPlayers, setTournamentPlayers] = useState<TournamentPlayerScore[]>([]);
+  const [timeLimitS, setTimeLimitS] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(30);
 
   const stepStartRef = useRef<number>(0);
+  const pendingPinRef = useRef<{ lat: number; lng: number } | null>(null);
+  const handleGuessRef = useRef<((guess: { lat: number; lng: number }) => Promise<void>) | null>(null);
 
   // Load tournament state + subscribe to live score updates
   useEffect(() => {
@@ -165,8 +170,9 @@ export default function RoundPage() {
     Promise.all([
       fetch(`/api/rounds/${roundId}`).then((r) => r.json()),
       fetch("/api/map-settings").then((r) => r.json()),
+      fetch("/api/scoring-settings").then((r) => r.json()),
     ])
-      .then(([roundData, settingsData]) => {
+      .then(([roundData, settingsData, scoringData]) => {
         if (roundData.error) throw new Error(roundData.error);
         setPhotos(roundData.photos);
         setMapSettings({
@@ -175,6 +181,9 @@ export default function RoundPage() {
           defaultZoom: settingsData.defaultZoom ?? DEFAULT_MAP_SETTINGS.defaultZoom,
           mapStyle: settingsData.mapStyle ?? DEFAULT_MAP_SETTINGS.mapStyle,
         });
+        const limit = scoringData.timeLimitS ?? 30;
+        setTimeLimitS(limit);
+        setTimeLeft(limit);
         stepStartRef.current = Date.now();
         setPhase("playing");
       })
@@ -183,6 +192,37 @@ export default function RoundPage() {
         setPhase("error");
       });
   }, [roundId]);
+
+  // Keep handleGuessRef in sync so the timer callback always sees the latest version
+  useEffect(() => {
+    handleGuessRef.current = handleGuess;
+  });
+
+  // Countdown timer — interval only decrements, timeLeft is reset externally (in load/handleNext)
+  useEffect(() => {
+    if (phase !== "playing" || timeLimitS === 0) return;
+
+    pendingPinRef.current = null;
+
+    const interval = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [phase, step, timeLimitS]);
+
+  // Auto-submit when timer reaches 0
+  useEffect(() => {
+    if (timeLeft !== 0 || phase !== "playing" || submitting) return;
+    const fallback = { lat: mapSettings.centerLat, lng: mapSettings.centerLng };
+    handleGuessRef.current?.(pendingPinRef.current ?? fallback);
+  }, [timeLeft]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleGuess(guess: GuessResult) {
     if (submitting) return;
@@ -252,6 +292,7 @@ export default function RoundPage() {
     } else {
       setStep((s) => s + 1);
       setCurrentResult(null);
+      setTimeLeft(timeLimitS);
       setPhase("playing");
       stepStartRef.current = Date.now();
     }
@@ -427,20 +468,45 @@ export default function RoundPage() {
 
   return (
     <div className="flex flex-col h-dvh bg-background">
-      <div className="px-3 sm:px-4 py-2.5 bg-background/95 backdrop-blur-md border-b flex items-center justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <Logo size="sm" showWordmark={false} />
-          <StepDots total={photos.length} current={step} done={results.length} />
+      <div className="shrink-0">
+        <div className="px-3 sm:px-4 py-2.5 bg-background/95 backdrop-blur-md flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Logo size="sm" showWordmark={false} />
+            <StepDots total={photos.length} current={step} done={results.length} />
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            {tournamentCode && tournamentPlayers.length > 0 && (
+              <TournamentScoreRibbon players={tournamentPlayers} />
+            )}
+            {phase === "playing" && timeLimitS > 0 && (
+              <div className={cn(
+                "flex items-center gap-1 tabular-nums font-semibold",
+                timeLeft > timeLimitS * 0.5 ? "text-success" :
+                timeLeft > timeLimitS * 0.2 ? "text-warning" : "text-destructive",
+              )}>
+                <Clock className="size-3.5" />
+                {timeLeft}s
+              </div>
+            )}
+            <span className="text-muted-foreground hidden sm:inline">Wynik</span>
+            <span className="font-semibold tabular-nums">
+              {runningScore.toLocaleString("pl-PL")}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          {tournamentCode && tournamentPlayers.length > 0 && (
-            <TournamentScoreRibbon players={tournamentPlayers} />
-          )}
-          <span className="text-muted-foreground hidden sm:inline">Wynik</span>
-          <span className="font-semibold tabular-nums">
-            {runningScore.toLocaleString("pl-PL")}
-          </span>
-        </div>
+        {phase === "playing" && timeLimitS > 0 && (
+          <div className="h-1 bg-muted border-b border-border">
+            <div
+              className={cn(
+                "h-full transition-all duration-1000 ease-linear",
+                timeLeft > timeLimitS * 0.5 ? "bg-success" :
+                timeLeft > timeLimitS * 0.2 ? "bg-warning" : "bg-destructive",
+              )}
+              style={{ width: `${(timeLeft / timeLimitS) * 100}%` }}
+            />
+          </div>
+        )}
+        {(phase !== "playing" || timeLimitS === 0) && <div className="border-b border-border" />}
       </div>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
@@ -472,6 +538,7 @@ export default function RoundPage() {
             initialZoom={mapSettings.defaultZoom}
             mapStyle={mapSettings.mapStyle}
             className="w-full h-full"
+            onPinChange={(pin) => { pendingPinRef.current = pin; }}
           />
 
           {submitting && (

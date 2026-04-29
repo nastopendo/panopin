@@ -1,23 +1,23 @@
 import type { Difficulty } from "@/lib/db/schema";
 import { haversineMeters } from "@/lib/geo";
 
-// km scale for exponential decay — smaller = harder to earn points at distance
-const SCALE_M: Record<Difficulty, number> = {
-  easy: 2000,
-  medium: 1000,
-  hard: 500,
-};
+export interface ScoringConfig {
+  maxDistanceM: number;
+  timeLimitMs: number;
+  maxBaseScore: number;
+  maxTimeBonus: number;
+  scaleM: Record<Difficulty, number>;
+  mult: Record<Difficulty, number>;
+}
 
-// score multiplier per difficulty
-const MULT: Record<Difficulty, number> = {
-  easy: 1.0,
-  medium: 1.2,
-  hard: 1.5,
+export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
+  maxDistanceM: 3000,
+  timeLimitMs: 30_000,
+  maxBaseScore: 5000,
+  maxTimeBonus: 300,
+  scaleM: { easy: 800, medium: 500, hard: 300 },
+  mult: { easy: 1.0, medium: 1.2, hard: 1.5 },
 };
-
-const MAX_BASE_SCORE = 5000;
-const MAX_TIME_BONUS = 300; // points
-const TIME_WINDOW_MS = 30_000; // 30 seconds for full bonus
 
 export interface ScoreInput {
   guessLat: number;
@@ -35,20 +35,28 @@ export interface ScoreResult {
   total: number;
 }
 
-export function scoreGuess(input: ScoreInput): ScoreResult {
+export function scoreGuess(
+  input: ScoreInput,
+  config: ScoringConfig = DEFAULT_SCORING_CONFIG,
+): ScoreResult {
   const { guessLat, guessLng, actualLat, actualLng, difficulty, elapsedMs } = input;
+  const { maxDistanceM, timeLimitMs, maxBaseScore, maxTimeBonus, scaleM, mult } = config;
 
   const distanceM = Math.round(
     haversineMeters(guessLat, guessLng, actualLat, actualLng),
   );
 
-  const base = MAX_BASE_SCORE * Math.exp(-distanceM / SCALE_M[difficulty]);
+  const base =
+    distanceM >= maxDistanceM
+      ? 0
+      : maxBaseScore * Math.exp(-distanceM / scaleM[difficulty]);
+
   const timeBonus = Math.min(
-    MAX_TIME_BONUS,
-    Math.max(0, ((TIME_WINDOW_MS - elapsedMs) / TIME_WINDOW_MS) * MAX_TIME_BONUS),
+    maxTimeBonus,
+    Math.max(0, ((timeLimitMs - elapsedMs) / timeLimitMs) * maxTimeBonus),
   );
 
-  const total = Math.round(base * MULT[difficulty] + timeBonus);
+  const total = Math.round(base * mult[difficulty] + timeBonus);
 
   return {
     distanceM,

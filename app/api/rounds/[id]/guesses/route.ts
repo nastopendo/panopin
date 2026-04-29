@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
-import { guesses, photos, rounds, tournamentPlayers } from "@/lib/db/schema";
+import { guesses, photos, rounds, scoringSettings, tournamentPlayers } from "@/lib/db/schema";
 import { eq, and, sum, inArray } from "drizzle-orm";
-import { scoreGuess } from "@/lib/scoring";
+import { scoreGuess, DEFAULT_SCORING_CONFIG, type ScoringConfig } from "@/lib/scoring";
 
 // ─── GET — guesses for a completed round (public, no auth needed) ─────────────
 
@@ -118,14 +118,42 @@ export async function POST(
 
   if (!photo) return NextResponse.json({ error: "photo not found" }, { status: 404 });
 
-  const result = scoreGuess({
-    guessLat,
-    guessLng,
-    actualLat: photo.lat,
-    actualLng: photo.lng,
-    difficulty: photo.difficulty,
-    elapsedMs,
-  });
+  const [scoringRow] = await db
+    .select()
+    .from(scoringSettings)
+    .where(eq(scoringSettings.id, 1))
+    .limit(1);
+
+  const config: ScoringConfig = scoringRow
+    ? {
+        maxDistanceM: scoringRow.maxDistanceM,
+        timeLimitMs: scoringRow.timeLimitS * 1000,
+        maxBaseScore: scoringRow.maxBaseScore,
+        maxTimeBonus: scoringRow.maxTimeBonus,
+        scaleM: {
+          easy: scoringRow.scaleEasyM,
+          medium: scoringRow.scaleMediumM,
+          hard: scoringRow.scaleHardM,
+        },
+        mult: {
+          easy: scoringRow.multEasy,
+          medium: scoringRow.multMedium,
+          hard: scoringRow.multHard,
+        },
+      }
+    : DEFAULT_SCORING_CONFIG;
+
+  const result = scoreGuess(
+    {
+      guessLat,
+      guessLng,
+      actualLat: photo.lat,
+      actualLng: photo.lng,
+      difficulty: photo.difficulty,
+      elapsedMs,
+    },
+    config,
+  );
 
   await db.insert(guesses).values({
     roundId,
