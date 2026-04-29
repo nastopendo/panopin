@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Image as ImageIcon, Map as MapIcon, Tag as TagIcon, Upload } from "lucide-react";
+import { BarChart2, Image as ImageIcon, Map as MapIcon, Tag as TagIcon, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { href: "/admin/photos", label: "Zdjęcia", icon: ImageIcon },
   { href: "/admin/tags", label: "Tagi", icon: TagIcon },
   { href: "/admin/map-settings", label: "Mapa", icon: MapIcon },
+  { href: "/admin/analytics", label: "Analityka", icon: BarChart2 },
 ];
 
 export function AdminNav() {
