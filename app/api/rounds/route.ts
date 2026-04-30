@@ -2,13 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { photoTags, photos, rounds } from "@/lib/db/schema";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/server";
+import { selectPhotos } from "@/lib/photo-selection";
 
 const startSchema = z.object({
   filterDifficulty: z.enum(["easy", "medium", "hard"]).optional(),
   filterTagIds: z.array(z.string().uuid()).optional(),
 });
+
+const SPACING_MESSAGES: Record<string, string> = {
+  insufficient_photos:
+    "Brak wystarczającej liczby zdjęć z wybranymi filtrami (potrzeba co najmniej 5)",
+  spacing_not_satisfied:
+    "Nie udało się dobrać 5 zdjęć spełniających minimalną odległość między lokalizacjami. Spróbuj zmienić filtry lub zmniejsz minimalną odległość w ustawieniach.",
+};
 
 export async function POST(req: Request) {
   const user = await getCurrentUser();
@@ -19,45 +27,31 @@ export async function POST(req: Request) {
 
   const { filterDifficulty, filterTagIds } = parsed.data;
 
-  // Build WHERE conditions
   const conditions = [eq(photos.status, "published")];
   if (filterDifficulty) conditions.push(eq(photos.difficulty, filterDifficulty));
 
-  let tagSubquery: ReturnType<typeof inArray> | undefined;
   if (filterTagIds && filterTagIds.length > 0) {
-    tagSubquery = inArray(
-      photos.id,
-      db
-        .select({ id: photoTags.photoId })
-        .from(photoTags)
-        .where(inArray(photoTags.tagId, filterTagIds)),
+    conditions.push(
+      inArray(
+        photos.id,
+        db
+          .select({ id: photoTags.photoId })
+          .from(photoTags)
+          .where(inArray(photoTags.tagId, filterTagIds)),
+      ),
     );
-    conditions.push(tagSubquery);
   }
 
-  const selected = await db
-    .select({
-      id: photos.id,
-      tileBaseUrl: photos.tileBaseUrl,
-      heading: photos.heading,
-      tileManifest: photos.tileManifest,
-    })
-    .from(photos)
-    .where(and(...conditions))
-    .orderBy(sql`random()`)
-    .limit(5);
+  const result = await selectPhotos(conditions, 5);
 
-  if (selected.length < 5) {
-    const filterDesc =
-      filterDifficulty || (filterTagIds && filterTagIds.length > 0)
-        ? " z wybranymi filtrami"
-        : "";
+  if ("error" in result) {
     return NextResponse.json(
-      { error: `Brak wystarczającej liczby zdjęć${filterDesc} (potrzeba co najmniej 5)` },
-      { status: 422 },
+      { error: SPACING_MESSAGES[result.error] ?? result.error },
+      { status: result.status },
     );
   }
 
+  const selected = result;
   const photoIds = selected.map((p) => p.id);
 
   const [round] = await db

@@ -19,6 +19,7 @@ interface Settings {
   multEasy: number;
   multMedium: number;
   multHard: number;
+  minSpacingM: number;
 }
 
 type Difficulty = "easy" | "medium" | "hard";
@@ -194,6 +195,16 @@ export default function ScoringSettingsPage() {
             min={0}
             max={1000}
             step={10}
+          />
+          <Field
+            id="minSpacing"
+            label="Min. odstęp między zdjęciami (m)"
+            hint="0 = wyłączone. Odległość między każdą parą zdjęć w serii."
+            value={draft.minSpacingM}
+            onChange={num("minSpacingM")}
+            min={0}
+            max={20000}
+            step={100}
           />
         </CardContent>
       </Card>

@@ -17,6 +17,7 @@ const DEFAULTS = {
   multEasy: DEFAULT_SCORING_CONFIG.mult.easy,
   multMedium: DEFAULT_SCORING_CONFIG.mult.medium,
   multHard: DEFAULT_SCORING_CONFIG.mult.hard,
+  minSpacingM: 0,
 };
 
 export async function GET() {
@@ -43,6 +44,7 @@ const BodySchema = z.object({
   multEasy: z.number().min(0.1).max(5),
   multMedium: z.number().min(0.1).max(5),
   multHard: z.number().min(0.1).max(5),
+  minSpacingM: z.number().int().min(0).max(20_000),
 });
 
 export async function PUT(req: Request) {

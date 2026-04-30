@@ -119,6 +119,7 @@ export const scoringSettings = pgTable("scoring_settings", {
   multEasy: doublePrecision("mult_easy").notNull().default(1.0),
   multMedium: doublePrecision("mult_medium").notNull().default(1.2),
   multHard: doublePrecision("mult_hard").notNull().default(1.5),
+  minSpacingM: integer("min_spacing_m").notNull().default(0),
   updatedAt: timestamptz("updated_at").notNull().defaultNow(),
 });
 

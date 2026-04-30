@@ -7,13 +7,14 @@ import {
   tournamentPlayers,
   tournaments,
 } from "@/lib/db/schema";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/server";
 import {
   TOURNAMENT_PHOTOS_PER_GAME,
   isValidTournamentCode,
   normalizeTournamentCode,
 } from "@/lib/tournaments";
+import { selectPhotos } from "@/lib/photo-selection";
 
 export async function POST(
   _req: Request,
@@ -53,7 +54,7 @@ export async function POST(
     });
   }
 
-  // Pick 5 random photos with the tournament's filters
+  // Pick photos with the tournament's filters, respecting the min-spacing setting
   const conditions = [eq(photos.status, "published")];
   if (tournament.filterDifficulty) {
     conditions.push(eq(photos.difficulty, tournament.filterDifficulty));
@@ -71,27 +72,17 @@ export async function POST(
     );
   }
 
-  const selected = await db
-    .select({
-      id: photos.id,
-      tileBaseUrl: photos.tileBaseUrl,
-      heading: photos.heading,
-      tileManifest: photos.tileManifest,
-    })
-    .from(photos)
-    .where(and(...conditions))
-    .orderBy(sql`random()`)
-    .limit(TOURNAMENT_PHOTOS_PER_GAME);
+  const selectionResult = await selectPhotos(conditions, TOURNAMENT_PHOTOS_PER_GAME);
 
-  if (selected.length < TOURNAMENT_PHOTOS_PER_GAME) {
-    return NextResponse.json(
-      {
-        error: `Brak wystarczającej liczby zdjęć z wybranymi filtrami (potrzeba co najmniej ${TOURNAMENT_PHOTOS_PER_GAME})`,
-      },
-      { status: 422 },
-    );
+  if ("error" in selectionResult) {
+    const msg =
+      selectionResult.error === "spacing_not_satisfied"
+        ? `Nie udało się dobrać ${TOURNAMENT_PHOTOS_PER_GAME} zdjęć spełniających minimalną odległość między lokalizacjami. Zmień filtry lub zmniejsz minimalną odległość w ustawieniach.`
+        : `Brak wystarczającej liczby zdjęć z wybranymi filtrami (potrzeba co najmniej ${TOURNAMENT_PHOTOS_PER_GAME})`;
+    return NextResponse.json({ error: msg }, { status: selectionResult.status });
   }
 
+  const selected = selectionResult;
   const photoIds = selected.map((p) => p.id);
 
   const players = await db
