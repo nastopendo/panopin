@@ -135,6 +135,7 @@ export const tournaments = pgTable("tournaments", {
   photoIds: jsonb("photo_ids").$type<string[]>(),
   filterTagIds: jsonb("filter_tag_ids").$type<string[]>(),
   filterDifficulty: difficultyEnum("filter_difficulty"),
+  filterDifficulties: jsonb("filter_difficulties").$type<string[]>(),
   startedAt: timestamptz("started_at"),
   finishedAt: timestamptz("finished_at"),
   createdAt: timestamptz("created_at").defaultNow().notNull(),

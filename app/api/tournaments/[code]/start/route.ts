@@ -7,7 +7,7 @@ import {
   tournamentPlayers,
   tournaments,
 } from "@/lib/db/schema";
-import { eq, inArray, ne } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/server";
 import {
   TOURNAMENT_PHOTOS_PER_GAME,
@@ -54,14 +54,15 @@ export async function POST(
     });
   }
 
-  // Pick photos with the tournament's filters, respecting the min-spacing setting
-  const conditions = [eq(photos.status, "published")];
-  if (tournament.filterDifficulty) {
-    conditions.push(eq(photos.difficulty, tournament.filterDifficulty));
-  } else {
-    // extreme is opt-in only — excluded from "all difficulties"
-    conditions.push(ne(photos.difficulty, "extreme"));
-  }
+  type DifficultyValue = "easy" | "medium" | "hard" | "extreme";
+  const DEFAULT_DIFFICULTIES: DifficultyValue[] = ["easy", "medium", "hard"];
+  const difficulties: DifficultyValue[] =
+    (tournament.filterDifficulties as DifficultyValue[] | null) ?? DEFAULT_DIFFICULTIES;
+
+  const conditions = [
+    eq(photos.status, "published"),
+    inArray(photos.difficulty, difficulties),
+  ];
   const filterTagIds = (tournament.filterTagIds ?? []) as string[];
   if (filterTagIds.length > 0) {
     conditions.push(
@@ -111,7 +112,6 @@ export async function POST(
         .values({
           userId: p.userId,
           photoIds,
-          filterDifficulty: tournament.filterDifficulty ?? null,
           filterTagIds: tournament.filterTagIds ?? null,
         })
         .returning({ id: rounds.id });

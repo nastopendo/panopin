@@ -9,13 +9,18 @@ import {
   generateTournamentCode,
 } from "@/lib/tournaments";
 
+const VALID_DIFFICULTIES = ["easy", "medium", "hard", "extreme"] as const;
+
 const BodySchema = z.object({
   displayName: z
     .string()
     .trim()
     .min(TOURNAMENT_DISPLAY_NAME_MIN)
     .max(TOURNAMENT_DISPLAY_NAME_MAX),
-  filterDifficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  filterDifficulties: z
+    .array(z.enum(VALID_DIFFICULTIES))
+    .min(1, "Wybierz co najmniej jedną trudność")
+    .optional(),
   filterTagIds: z.array(z.string().uuid()).optional(),
 });
 
@@ -33,7 +38,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { displayName, filterDifficulty, filterTagIds } = parsed.data;
+  const { displayName, filterDifficulties, filterTagIds } = parsed.data;
 
   let tournamentId: string | null = null;
   let code: string | null = null;
@@ -46,7 +51,7 @@ export async function POST(req: Request) {
         .values({
           code: candidate,
           hostId: user.id,
-          filterDifficulty: filterDifficulty ?? null,
+          filterDifficulties: filterDifficulties ?? null,
           filterTagIds: filterTagIds ?? null,
         })
         .returning({ id: tournaments.id, code: tournaments.code });

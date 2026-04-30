@@ -15,21 +15,22 @@ import {
 } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Logo } from "@/components/brand/Logo";
-import { cn } from "@/lib/utils";
 
 type Difficulty = "easy" | "medium" | "hard" | "extreme";
 
-const DIFFICULTY_OPTIONS: { value: Difficulty | "all"; label: string }[] = [
-  { value: "all", label: "Wszystkie" },
+const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
   { value: "easy", label: "Łatwe" },
   { value: "medium", label: "Średnie" },
   { value: "hard", label: "Trudne" },
+  { value: "extreme", label: "Ekstremalne" },
 ];
+
+const DEFAULT_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
 export default function PlayPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
+  const [difficulties, setDifficulties] = useState<Difficulty[]>(DEFAULT_DIFFICULTIES);
   const router = useRouter();
 
   async function startGame() {
@@ -38,8 +39,7 @@ export default function PlayPage() {
     try {
       await ensureGuestSession();
 
-      const body: Record<string, unknown> = {};
-      if (difficulty !== "all") body.filterDifficulty = difficulty;
+      const body: Record<string, unknown> = { filterDifficulties: difficulties };
 
       const res = await fetch("/api/rounds", {
         method: "POST",
@@ -99,9 +99,9 @@ export default function PlayPage() {
                   Trudność
                 </p>
                 <ToggleGroup
-                  type="single"
-                  value={difficulty}
-                  onValueChange={(v) => v && setDifficulty(v as Difficulty | "all")}
+                  type="multiple"
+                  value={difficulties}
+                  onValueChange={(v) => v.length > 0 && setDifficulties(v as Difficulty[])}
                   className="w-full"
                 >
                   {DIFFICULTY_OPTIONS.map((opt) => (
@@ -115,19 +115,6 @@ export default function PlayPage() {
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>
-                <button
-                  type="button"
-                  aria-pressed={difficulty === "extreme"}
-                  onClick={() => setDifficulty(difficulty === "extreme" ? "all" : "extreme")}
-                  className={cn(
-                    "w-full border rounded-md text-sm font-medium h-9 transition-colors px-3",
-                    difficulty === "extreme"
-                      ? "bg-purple-100 text-purple-700 border-purple-300"
-                      : "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-purple-300",
-                  )}
-                >
-                  Ekstremalne ⚡ — wykluczone z &quot;Wszystkie&quot;
-                </button>
               </div>
 
             </CardContent>

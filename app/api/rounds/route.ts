@@ -2,12 +2,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { photoTags, photos, rounds } from "@/lib/db/schema";
-import { eq, inArray, ne } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/server";
 import { selectPhotos } from "@/lib/photo-selection";
 
+const VALID_DIFFICULTIES = ["easy", "medium", "hard", "extreme"] as const;
+type DifficultyValue = (typeof VALID_DIFFICULTIES)[number];
+const DEFAULT_DIFFICULTIES: DifficultyValue[] = ["easy", "medium", "hard"];
+
 const startSchema = z.object({
-  filterDifficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  filterDifficulties: z
+    .array(z.enum(VALID_DIFFICULTIES))
+    .min(1, "Wybierz co najmniej jedną trudność")
+    .optional(),
   filterTagIds: z.array(z.string().uuid()).optional(),
 });
 
@@ -25,15 +32,13 @@ export async function POST(req: Request) {
   const parsed = startSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { filterDifficulty, filterTagIds } = parsed.data;
+  const { filterDifficulties, filterTagIds } = parsed.data;
+  const difficulties: DifficultyValue[] = filterDifficulties ?? DEFAULT_DIFFICULTIES;
 
-  const conditions = [eq(photos.status, "published")];
-  if (filterDifficulty) {
-    conditions.push(eq(photos.difficulty, filterDifficulty));
-  } else {
-    // extreme is opt-in only — excluded from "all difficulties"
-    conditions.push(ne(photos.difficulty, "extreme"));
-  }
+  const conditions = [
+    eq(photos.status, "published"),
+    inArray(photos.difficulty, difficulties),
+  ];
 
   if (filterTagIds && filterTagIds.length > 0) {
     conditions.push(
@@ -64,7 +69,6 @@ export async function POST(req: Request) {
     .values({
       userId: user?.id ?? null,
       photoIds,
-      filterDifficulty: filterDifficulty ?? null,
       filterTagIds: filterTagIds ?? null,
     })
     .returning({ id: rounds.id });

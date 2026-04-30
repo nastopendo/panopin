@@ -28,12 +28,14 @@ import { cn } from "@/lib/utils";
 type Difficulty = "easy" | "medium" | "hard" | "extreme";
 type Mode = "create" | "join";
 
-const DIFFICULTY_OPTIONS: { value: Difficulty | "all"; label: string }[] = [
-  { value: "all", label: "Wszystkie" },
+const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
   { value: "easy", label: "Łatwe" },
   { value: "medium", label: "Średnie" },
   { value: "hard", label: "Trudne" },
+  { value: "extreme", label: "Ekstremalne" },
 ];
+
+const DEFAULT_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
 export default function TournamentLandingPage() {
   const router = useRouter();
@@ -41,7 +43,7 @@ export default function TournamentLandingPage() {
 
   const [displayName, setDisplayName] = useState("");
   const [code, setCode] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
+  const [difficulties, setDifficulties] = useState<Difficulty[]>(DEFAULT_DIFFICULTIES);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +69,7 @@ export default function TournamentLandingPage() {
     setError(null);
     try {
       await ensureGuestSession();
-      const body: Record<string, unknown> = { displayName: displayName.trim() };
-      if (difficulty !== "all") body.filterDifficulty = difficulty;
+      const body: Record<string, unknown> = { displayName: displayName.trim(), filterDifficulties: difficulties };
 
       const res = await fetch("/api/tournaments", {
         method: "POST",
@@ -218,9 +219,9 @@ export default function TournamentLandingPage() {
                     Trudność
                   </p>
                   <ToggleGroup
-                    type="single"
-                    value={difficulty}
-                    onValueChange={(v) => v && setDifficulty(v as Difficulty | "all")}
+                    type="multiple"
+                    value={difficulties}
+                    onValueChange={(v) => v.length > 0 && setDifficulties(v as Difficulty[])}
                     className="w-full"
                   >
                     {DIFFICULTY_OPTIONS.map((opt) => (
@@ -234,19 +235,6 @@ export default function TournamentLandingPage() {
                       </ToggleGroupItem>
                     ))}
                   </ToggleGroup>
-                  <button
-                    type="button"
-                    aria-pressed={difficulty === "extreme"}
-                    onClick={() => setDifficulty(difficulty === "extreme" ? "all" : "extreme")}
-                    className={cn(
-                      "w-full border rounded-md text-sm font-medium h-9 transition-colors px-3",
-                      difficulty === "extreme"
-                        ? "bg-purple-100 text-purple-700 border-purple-300"
-                        : "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-purple-300",
-                    )}
-                  >
-                    Ekstremalne ⚡ — wykluczone z &quot;Wszystkie&quot;
-                  </button>
                 </div>
 
               </CardContent>
