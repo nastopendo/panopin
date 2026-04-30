@@ -40,6 +40,7 @@ interface RoundPhoto {
   tileBaseUrl: string;
   heading: number;
   tileLevels: Array<{ faceSize: number; nbTiles: number }>;
+  tags: { id: string; name: string; color: string }[];
 }
 
 interface StepResult {
@@ -553,6 +554,7 @@ export default function RoundPage() {
           {phase === "revealed" && currentResult && (
             <ResultOverlay
               result={currentResult}
+              tags={currentPhoto?.tags ?? []}
               stepNumber={step + 1}
               totalSteps={photos.length}
               onNext={handleNext}
@@ -692,11 +694,13 @@ function TournamentScoreRibbon({
 
 function ResultOverlay({
   result,
+  tags,
   stepNumber,
   totalSteps,
   onNext,
 }: {
   result: StepResult;
+  tags: { id: string; name: string; color: string }[];
   stepNumber: number;
   totalSteps: number;
   onNext: () => void;
@@ -739,6 +743,24 @@ function ResultOverlay({
               </div>
             </div>
           </div>
+
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border"
+                  style={{
+                    color: tag.color,
+                    borderColor: tag.color + "55",
+                    background: tag.color + "18",
+                  }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
 
           <Button onClick={onNext} variant="brand" size="default" className="w-full h-10">
             {isLast ? (

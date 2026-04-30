@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
-import { photos, rounds } from "@/lib/db/schema";
+import { photos, photoTags, rounds, tags } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 
 export async function GET(
@@ -17,17 +17,37 @@ export async function GET(
 
   if (!round) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const selected = await db
-    .select({
-      id: photos.id,
-      tileBaseUrl: photos.tileBaseUrl,
-      heading: photos.heading,
-      tileManifest: photos.tileManifest,
-    })
-    .from(photos)
-    .where(inArray(photos.id, round.photoIds));
+  const [selected, tagRows] = await Promise.all([
+    db
+      .select({
+        id: photos.id,
+        tileBaseUrl: photos.tileBaseUrl,
+        heading: photos.heading,
+        tileManifest: photos.tileManifest,
+      })
+      .from(photos)
+      .where(inArray(photos.id, round.photoIds)),
 
-  // Preserve original order
+    db
+      .select({
+        photoId: photoTags.photoId,
+        tagId: tags.id,
+        tagName: tags.name,
+        tagColor: tags.color,
+      })
+      .from(photoTags)
+      .innerJoin(tags, eq(photoTags.tagId, tags.id))
+      .where(inArray(photoTags.photoId, round.photoIds)),
+  ]);
+
+  const tagsByPhotoId = tagRows.reduce<Record<string, { id: string; name: string; color: string }[]>>(
+    (acc, row) => {
+      (acc[row.photoId] ??= []).push({ id: row.tagId, name: row.tagName, color: row.tagColor });
+      return acc;
+    },
+    {},
+  );
+
   const byId = Object.fromEntries(selected.map((p) => [p.id, p]));
   const roundPhotos = round.photoIds.map((pid) => {
     const p = byId[pid];
@@ -37,6 +57,7 @@ export async function GET(
       heading: p.heading,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tileLevels: (p.tileManifest as any)?.levels ?? [],
+      tags: tagsByPhotoId[pid] ?? [],
     };
   });
 

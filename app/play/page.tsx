@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Filter, Loader2, Sparkles } from "lucide-react";
@@ -14,15 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
-
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-}
 
 type Difficulty = "easy" | "medium" | "hard" | "extreme";
 
@@ -37,26 +30,7 @@ export default function PlayPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(true);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const router = useRouter();
-
-  useEffect(() => {
-    fetch("/api/admin/tags")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setTags(data);
-      })
-      .catch(() => {})
-      .finally(() => setTagsLoading(false));
-  }, []);
-
-  function toggleTag(id: string) {
-    setSelectedTagIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
-    );
-  }
 
   async function startGame() {
     setLoading(true);
@@ -66,7 +40,6 @@ export default function PlayPage() {
 
       const body: Record<string, unknown> = {};
       if (difficulty !== "all") body.filterDifficulty = difficulty;
-      if (selectedTagIds.length > 0) body.filterTagIds = selectedTagIds;
 
       const res = await fetch("/api/rounds", {
         method: "POST",
@@ -157,57 +130,6 @@ export default function PlayPage() {
                 </button>
               </div>
 
-              <div>
-                <div className="flex items-baseline justify-between mb-2">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Tagi <span className="text-muted-foreground/60 normal-case">(opcjonalnie)</span>
-                  </p>
-                  {selectedTagIds.length > 0 && (
-                    <button
-                      onClick={() => setSelectedTagIds([])}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Wyczyść ({selectedTagIds.length})
-                    </button>
-                  )}
-                </div>
-                {tagsLoading ? (
-                  <div className="flex flex-wrap gap-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-9 w-20 rounded-full" />
-                    ))}
-                  </div>
-                ) : tags.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">
-                    Brak tagów w bazie.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => {
-                      const active = selectedTagIds.includes(tag.id);
-                      return (
-                        <button
-                          key={tag.id}
-                          onClick={() => toggleTag(tag.id)}
-                          aria-pressed={active}
-                          className={cn(
-                            "inline-flex items-center h-9 px-3 rounded-full text-xs font-medium border transition-all duration-150",
-                            "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                            active ? "scale-100" : "opacity-60 hover:opacity-100",
-                          )}
-                          style={{
-                            background: active ? tag.color + "33" : "transparent",
-                            color: tag.color,
-                            borderColor: active ? tag.color : tag.color + "55",
-                          }}
-                        >
-                          {tag.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
             </CardContent>
           </Card>
 

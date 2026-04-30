@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Filter, Loader2, Sparkles, Users } from "lucide-react";
@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/brand/Logo";
 import {
   TOURNAMENT_DISPLAY_NAME_MAX,
@@ -28,12 +27,6 @@ import { cn } from "@/lib/utils";
 
 type Difficulty = "easy" | "medium" | "hard" | "extreme";
 type Mode = "create" | "join";
-
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-}
 
 const DIFFICULTY_OPTIONS: { value: Difficulty | "all"; label: string }[] = [
   { value: "all", label: "Wszystkie" },
@@ -49,28 +42,9 @@ export default function TournamentLandingPage() {
   const [displayName, setDisplayName] = useState("");
   const [code, setCode] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(true);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/tags")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setTags(data);
-      })
-      .catch(() => {})
-      .finally(() => setTagsLoading(false));
-  }, []);
-
-  function toggleTag(id: string) {
-    setSelectedTagIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
-    );
-  }
 
   function validateName(): string | null {
     const trimmed = displayName.trim();
@@ -95,7 +69,6 @@ export default function TournamentLandingPage() {
       await ensureGuestSession();
       const body: Record<string, unknown> = { displayName: displayName.trim() };
       if (difficulty !== "all") body.filterDifficulty = difficulty;
-      if (selectedTagIds.length > 0) body.filterTagIds = selectedTagIds;
 
       const res = await fetch("/api/tournaments", {
         method: "POST",
@@ -276,57 +249,6 @@ export default function TournamentLandingPage() {
                   </button>
                 </div>
 
-                <div>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Tagi <span className="text-muted-foreground/60 normal-case">(opcjonalnie)</span>
-                    </p>
-                    {selectedTagIds.length > 0 && (
-                      <button
-                        onClick={() => setSelectedTagIds([])}
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Wyczyść ({selectedTagIds.length})
-                      </button>
-                    )}
-                  </div>
-                  {tagsLoading ? (
-                    <div className="flex flex-wrap gap-2">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Skeleton key={i} className="h-9 w-20 rounded-full" />
-                      ))}
-                    </div>
-                  ) : tags.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">
-                      Brak tagów w bazie.
-                    </p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {tags.map((tag) => {
-                        const active = selectedTagIds.includes(tag.id);
-                        return (
-                          <button
-                            key={tag.id}
-                            onClick={() => toggleTag(tag.id)}
-                            aria-pressed={active}
-                            className={cn(
-                              "inline-flex items-center h-9 px-3 rounded-full text-xs font-medium border transition-all duration-150",
-                              "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                              active ? "scale-100" : "opacity-60 hover:opacity-100",
-                            )}
-                            style={{
-                              background: active ? tag.color + "33" : "transparent",
-                              color: tag.color,
-                              borderColor: active ? tag.color : tag.color + "55",
-                            }}
-                          >
-                            {tag.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
           ) : (
