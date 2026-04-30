@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { count, eq, isNotNull } from "drizzle-orm";
-import { ArrowRight, Compass, MapPin, Sparkles, Trophy, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Compass,
+  MapPin,
+  Sparkles,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { db } from "@/lib/db/client";
 import { photos, rounds } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
@@ -35,7 +42,7 @@ const STEPS = [
   {
     icon: MapPin,
     title: "Obejrzyj panoramę",
-    desc: "Otwórz zdjęcie 360° i rozejrzyj się — szukaj znajomych ulic, witryn sklepów, charakterystycznych budynków.",
+    desc: "Otwórz zdjęcie 360° i rozejrzyj się — szukaj znajomych ulic, budynków i innych charakterystycznych elementów.",
   },
   {
     icon: Compass,
@@ -45,7 +52,7 @@ const STEPS = [
   {
     icon: Trophy,
     title: "Pobij rekord",
-    desc: "5 rund, suma punktów. Walcz o miejsce w rankingu albo udostępnij wynik znajomym i zobacz kto trafia celniej.",
+    desc: "5 lokalizacji, jeden łączny wynik. Walcz o miejsce w rankingu albo udostępnij wynik znajomym i sprawdź, kto trafia celniej.",
   },
 ];
 
@@ -90,17 +97,28 @@ export default async function HomePage() {
 
         <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl text-pretty">
           Obejrzyj zdjęcie z okolicy, postaw pinezkę na mapie i zdobywaj punkty.
-          Im bliżej trafisz — tym lepiej. 5 lokalizacji, jedna runda, czysta zabawa.
+          Im bliżej trafisz — tym lepiej. 5 lokalizacji, jedna runda, czysta
+          zabawa.
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Button asChild size="xl" variant="brand" className="w-full sm:w-auto">
+          <Button
+            asChild
+            size="xl"
+            variant="brand"
+            className="w-full sm:w-auto"
+          >
             <Link href="/play">
               Zagraj teraz
               <ArrowRight />
             </Link>
           </Button>
-          <Button asChild size="xl" variant="outline" className="w-full sm:w-auto">
+          <Button
+            asChild
+            size="xl"
+            variant="outline"
+            className="w-full sm:w-auto"
+          >
             <Link href="/tournament">
               <Users className="size-5" />
               Turniej ze znajomymi
@@ -110,12 +128,19 @@ export default async function HomePage() {
 
         {stats && stats.panoramas > 0 && (
           <dl className="mt-12 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-12 max-w-xl">
-            <Stat label="Panoram w grze" value={stats.panoramas.toLocaleString("pl-PL")} />
+            <Stat
+              label="Panoram w grze"
+              value={stats.panoramas.toLocaleString("pl-PL")}
+            />
             <Stat
               label="Rund rozegranych"
               value={stats.rounds.toLocaleString("pl-PL")}
             />
-            <Stat label="Lokalizacji na rundę" value="5" className="col-span-2 sm:col-span-1" />
+            <Stat
+              label="Lokalizacji na rundę"
+              value="5"
+              className="col-span-2 sm:col-span-1"
+            />
           </dl>
         )}
       </section>
@@ -134,7 +159,10 @@ export default async function HomePage() {
                 <span className="absolute -top-3 left-6 rounded-full border bg-background px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                   Krok {i + 1}
                 </span>
-                <step.icon className="size-7 text-brand mb-4" strokeWidth={1.6} />
+                <step.icon
+                  className="size-7 text-brand mb-4"
+                  strokeWidth={1.6}
+                />
                 <h3 className="text-base font-semibold mb-1.5">{step.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {step.desc}
