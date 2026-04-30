@@ -193,11 +193,11 @@ export default function GuessMap({
       {pin && !disabled && (
         <div
           className="absolute left-1/2 -translate-x-1/2"
-          style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+          style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
         >
           <button
             onClick={() => onConfirm(pin)}
-            className="bg-brand text-brand-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-lg hover:opacity-90 active:scale-[0.97] transition-all"
+            className="bg-brand text-brand-foreground px-5 py-2 rounded-full text-sm font-semibold shadow-lg hover:opacity-90 active:scale-[0.97] transition-all"
           >
             Potwierdź miejsce
           </button>
@@ -207,10 +207,10 @@ export default function GuessMap({
       {!pin && !disabled && (
         <div
           className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-          style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+          style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
         >
-          <div className="bg-background/80 backdrop-blur-md border border-border text-muted-foreground px-4 py-2 rounded-full text-xs shadow">
-            Kliknij na mapie aby zaznaczyć miejsce
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 text-white/70 px-3 py-1.5 rounded-full text-xs shadow whitespace-nowrap">
+            Kliknij aby zaznaczyć
           </div>
         </div>
       )}

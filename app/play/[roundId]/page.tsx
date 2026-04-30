@@ -469,6 +469,7 @@ export default function RoundPage() {
 
   return (
     <div className="flex flex-col h-dvh bg-background">
+      {/* Header */}
       <div className="shrink-0">
         <div className="px-3 sm:px-4 py-2.5 bg-background/95 backdrop-blur-md flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -552,13 +553,18 @@ export default function RoundPage() {
           )}
 
           {phase === "revealed" && currentResult && (
-            <ResultOverlay
-              result={currentResult}
-              tags={currentPhoto?.tags ?? []}
-              stepNumber={step + 1}
-              totalSteps={photos.length}
-              onNext={handleNext}
-            />
+            <div
+              className="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none z-20 px-3"
+              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+            >
+              <ResultOverlay
+                result={currentResult}
+                tags={currentPhoto?.tags ?? []}
+                stepNumber={step + 1}
+                totalSteps={photos.length}
+                onNext={handleNext}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -709,73 +715,68 @@ function ResultOverlay({
 
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none z-20 px-3"
-      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      className={cn(
+        "bg-card/95 backdrop-blur-xl border rounded-2xl shadow-xl pointer-events-auto w-full",
+        "animate-in slide-in-from-bottom-3 fade-in duration-250",
+      )}
     >
-      <div
-        className={cn(
-          "bg-card/95 backdrop-blur-xl border rounded-2xl shadow-xl pointer-events-auto w-full max-w-md",
-          "animate-in slide-in-from-bottom-3 fade-in duration-250",
-        )}
-      >
-        <div className="px-4 py-3 flex flex-col gap-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {scoreLabel(result.score)}
-              </p>
-              <div className="flex items-baseline gap-1.5">
-                <span className={cn("text-2xl font-bold tabular-nums", scoreColor(result.score))}>
-                  {result.score.toLocaleString("pl-PL")}
-                </span>
-                <span className="text-xs text-muted-foreground">pkt</span>
-              </div>
-            </div>
-            <div className="text-right text-xs text-muted-foreground shrink-0">
-              <div className="font-medium text-foreground/80">
-                {formatDistance(result.distanceM)} od celu
-              </div>
-              <div className="flex items-center justify-end gap-1 mt-0.5">
-                <span>Bazowe {result.baseScore.toLocaleString("pl-PL")}</span>
-                {result.timeBonus > 0 && (
-                  <span className="text-success">+{result.timeBonus}s</span>
-                )}
-              </div>
+      <div className="px-4 py-3 flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              {scoreLabel(result.score)}
+            </p>
+            <div className="flex items-baseline gap-1.5">
+              <span className={cn("text-2xl font-bold tabular-nums", scoreColor(result.score))}>
+                {result.score.toLocaleString("pl-PL")}
+              </span>
+              <span className="text-xs text-muted-foreground">pkt</span>
             </div>
           </div>
-
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
-              {tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border"
-                  style={{
-                    color: tag.color,
-                    borderColor: tag.color + "55",
-                    background: tag.color + "18",
-                  }}
-                >
-                  {tag.name}
-                </span>
-              ))}
+          <div className="text-right text-xs text-muted-foreground shrink-0">
+            <div className="font-medium text-foreground/80">
+              {formatDistance(result.distanceM)} od celu
             </div>
-          )}
-
-          <Button onClick={onNext} variant="brand" size="default" className="w-full h-10">
-            {isLast ? (
-              <>
-                <Trophy />
-                Zobacz wyniki
-              </>
-            ) : (
-              <>
-                Panorama {stepNumber + 1} z {totalSteps}
-                <ArrowRight />
-              </>
-            )}
-          </Button>
+            <div className="flex items-center justify-end gap-1 mt-0.5">
+              <span>Bazowe {result.baseScore.toLocaleString("pl-PL")}</span>
+              {result.timeBonus > 0 && (
+                <span className="text-success">+{result.timeBonus} pkt bonus</span>
+              )}
+            </div>
+          </div>
         </div>
+
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
+            {tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border"
+                style={{
+                  color: tag.color,
+                  borderColor: tag.color + "55",
+                  background: tag.color + "18",
+                }}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <Button onClick={onNext} variant="brand" size="default" className="w-full h-10">
+          {isLast ? (
+            <>
+              <Trophy />
+              Zobacz wyniki
+            </>
+          ) : (
+            <>
+              Panorama {stepNumber + 1} z {totalSteps}
+              <ArrowRight />
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
