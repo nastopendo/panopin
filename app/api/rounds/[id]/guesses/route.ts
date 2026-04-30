@@ -134,11 +134,13 @@ export async function POST(
           easy: scoringRow.scaleEasyM,
           medium: scoringRow.scaleMediumM,
           hard: scoringRow.scaleHardM,
+          extreme: scoringRow.scaleExtremeM,
         },
         mult: {
           easy: scoringRow.multEasy,
           medium: scoringRow.multMedium,
           hard: scoringRow.multHard,
+          extreme: scoringRow.multExtreme,
         },
       }
     : DEFAULT_SCORING_CONFIG;

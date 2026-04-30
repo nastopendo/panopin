@@ -26,7 +26,7 @@ import {
 } from "@/lib/tournaments";
 import { cn } from "@/lib/utils";
 
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easy" | "medium" | "hard" | "extreme";
 type Mode = "create" | "join";
 
 interface Tag {
@@ -255,12 +255,25 @@ export default function TournamentLandingPage() {
                         key={opt.value}
                         value={opt.value}
                         aria-label={opt.label}
-                        className="flex-1 min-w-[5rem]"
+                        className="flex-1"
                       >
                         {opt.label}
                       </ToggleGroupItem>
                     ))}
                   </ToggleGroup>
+                  <button
+                    type="button"
+                    aria-pressed={difficulty === "extreme"}
+                    onClick={() => setDifficulty(difficulty === "extreme" ? "all" : "extreme")}
+                    className={cn(
+                      "w-full border rounded-md text-sm font-medium h-9 transition-colors px-3",
+                      difficulty === "extreme"
+                        ? "bg-purple-100 text-purple-700 border-purple-300"
+                        : "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-purple-300",
+                    )}
+                  >
+                    Ekstremalne ⚡ — wykluczone z &quot;Wszystkie&quot;
+                  </button>
                 </div>
 
                 <div>

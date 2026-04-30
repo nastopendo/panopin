@@ -19,7 +19,7 @@ import { relations } from "drizzle-orm";
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export const roleEnum = pgEnum("role", ["player", "admin"]);
-export const difficultyEnum = pgEnum("difficulty", ["easy", "medium", "hard"]);
+export const difficultyEnum = pgEnum("difficulty", ["easy", "medium", "hard", "extreme"]);
 export const photoStatusEnum = pgEnum("photo_status", [
   "draft",
   "processing",
@@ -119,6 +119,8 @@ export const scoringSettings = pgTable("scoring_settings", {
   multEasy: doublePrecision("mult_easy").notNull().default(1.0),
   multMedium: doublePrecision("mult_medium").notNull().default(1.2),
   multHard: doublePrecision("mult_hard").notNull().default(1.5),
+  scaleExtremeM: integer("scale_extreme_m").notNull().default(100),
+  multExtreme: doublePrecision("mult_extreme").notNull().default(2.0),
   minSpacingM: integer("min_spacing_m").notNull().default(0),
   updatedAt: timestamptz("updated_at").notNull().defaultNow(),
 });
@@ -240,7 +242,7 @@ export type Round = typeof rounds.$inferSelect;
 export type Guess = typeof guesses.$inferSelect;
 export type Tournament = typeof tournaments.$inferSelect;
 export type TournamentPlayer = typeof tournamentPlayers.$inferSelect;
-export type Difficulty = "easy" | "medium" | "hard";
+export type Difficulty = "easy" | "medium" | "hard" | "extreme";
 export type PhotoStatus = "draft" | "processing" | "published" | "rejected";
 export type TournamentStatus = "lobby" | "playing" | "finished";
 export type ScoringSettingsRow = typeof scoringSettings.$inferSelect;

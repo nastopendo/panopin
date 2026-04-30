@@ -17,6 +17,8 @@ const DEFAULTS = {
   multEasy: DEFAULT_SCORING_CONFIG.mult.easy,
   multMedium: DEFAULT_SCORING_CONFIG.mult.medium,
   multHard: DEFAULT_SCORING_CONFIG.mult.hard,
+  scaleExtremeM: DEFAULT_SCORING_CONFIG.scaleM.extreme,
+  multExtreme: DEFAULT_SCORING_CONFIG.mult.extreme,
   minSpacingM: 0,
 };
 
@@ -44,6 +46,8 @@ const BodySchema = z.object({
   multEasy: z.number().min(0.1).max(5),
   multMedium: z.number().min(0.1).max(5),
   multHard: z.number().min(0.1).max(5),
+  scaleExtremeM: z.number().int().min(10).max(50_000),
+  multExtreme: z.number().min(0.1).max(10),
   minSpacingM: z.number().int().min(0).max(20_000),
 });
 

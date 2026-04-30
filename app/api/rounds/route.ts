@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { photoTags, photos, rounds } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, ne } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/server";
 import { selectPhotos } from "@/lib/photo-selection";
 
@@ -28,7 +28,12 @@ export async function POST(req: Request) {
   const { filterDifficulty, filterTagIds } = parsed.data;
 
   const conditions = [eq(photos.status, "published")];
-  if (filterDifficulty) conditions.push(eq(photos.difficulty, filterDifficulty));
+  if (filterDifficulty) {
+    conditions.push(eq(photos.difficulty, filterDifficulty));
+  } else {
+    // extreme is opt-in only — excluded from "all difficulties"
+    conditions.push(ne(photos.difficulty, "extreme"));
+  }
 
   if (filterTagIds && filterTagIds.length > 0) {
     conditions.push(

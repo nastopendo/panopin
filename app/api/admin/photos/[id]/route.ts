@@ -9,7 +9,7 @@ const patchSchema = z.object({
   title: z.string().max(200).nullable().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
-  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  difficulty: z.enum(["easy", "medium", "hard", "extreme"]).optional(),
   tagIds: z.array(z.string().uuid()).optional(),
 });
 

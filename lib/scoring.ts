@@ -15,8 +15,8 @@ export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   timeLimitMs: 30_000,
   maxBaseScore: 5000,
   maxTimeBonus: 300,
-  scaleM: { easy: 800, medium: 500, hard: 300 },
-  mult: { easy: 1.0, medium: 1.2, hard: 1.5 },
+  scaleM: { easy: 800, medium: 500, hard: 300, extreme: 100 },
+  mult: { easy: 1.0, medium: 1.2, hard: 1.5, extreme: 2.0 },
 };
 
 export interface ScoreInput {

@@ -41,7 +41,7 @@ interface Photo {
   heading: number;
   lat: number;
   lng: number;
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: "easy" | "medium" | "hard" | "extreme";
   createdAt: string;
   tagIds: string[];
 }
@@ -52,12 +52,14 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: "Łatwe",
   medium: "Średnie",
   hard: "Trudne",
+  extreme: "Ekstremalne",
 };
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   easy: "text-green-600 bg-green-50 border-green-200",
   medium: "text-yellow-700 bg-yellow-50 border-yellow-200",
   hard: "text-red-600 bg-red-50 border-red-200",
+  extreme: "text-purple-700 bg-purple-50 border-purple-200",
 };
 
 interface EditDraft {
@@ -413,10 +415,14 @@ export default function AdminPhotosPage() {
                 type="single"
                 value={draft.difficulty}
                 onValueChange={(v) => v && setDraft((d) => ({ ...d, difficulty: v as Difficulty }))}
-                className="w-full"
+                className="w-full flex-wrap"
               >
                 {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((d) => (
-                  <ToggleGroupItem key={d} value={d} className="flex-1">
+                  <ToggleGroupItem
+                    key={d}
+                    value={d}
+                    className={cn("flex-1", d === "extreme" && "data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700")}
+                  >
                     {DIFFICULTY_LABELS[d]}
                   </ToggleGroupItem>
                 ))}

@@ -24,7 +24,7 @@ interface Tag {
   color: string;
 }
 
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easy" | "medium" | "hard" | "extreme";
 
 const DIFFICULTY_OPTIONS: { value: Difficulty | "all"; label: string }[] = [
   { value: "all", label: "Wszystkie" },
@@ -121,8 +121,8 @@ export default function PlayPage() {
               <CardDescription>Zostaną zastosowane do losowania.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Trudność
                 </p>
                 <ToggleGroup
@@ -136,12 +136,25 @@ export default function PlayPage() {
                       key={opt.value}
                       value={opt.value}
                       aria-label={opt.label}
-                      className="flex-1 min-w-[5rem]"
+                      className="flex-1"
                     >
                       {opt.label}
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>
+                <button
+                  type="button"
+                  aria-pressed={difficulty === "extreme"}
+                  onClick={() => setDifficulty(difficulty === "extreme" ? "all" : "extreme")}
+                  className={cn(
+                    "w-full border rounded-md text-sm font-medium h-9 transition-colors px-3",
+                    difficulty === "extreme"
+                      ? "bg-purple-100 text-purple-700 border-purple-300"
+                      : "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-purple-300",
+                  )}
+                >
+                  Ekstremalne ⚡ — wykluczone z &quot;Wszystkie&quot;
+                </button>
               </div>
 
               <div>

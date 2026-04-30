@@ -7,7 +7,7 @@ import {
   tournamentPlayers,
   tournaments,
 } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, ne } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/server";
 import {
   TOURNAMENT_PHOTOS_PER_GAME,
@@ -58,6 +58,9 @@ export async function POST(
   const conditions = [eq(photos.status, "published")];
   if (tournament.filterDifficulty) {
     conditions.push(eq(photos.difficulty, tournament.filterDifficulty));
+  } else {
+    // extreme is opt-in only — excluded from "all difficulties"
+    conditions.push(ne(photos.difficulty, "extreme"));
   }
   const filterTagIds = (tournament.filterTagIds ?? []) as string[];
   if (filterTagIds.length > 0) {

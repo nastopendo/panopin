@@ -19,15 +19,18 @@ interface Settings {
   multEasy: number;
   multMedium: number;
   multHard: number;
+  scaleExtremeM: number;
+  multExtreme: number;
   minSpacingM: number;
 }
 
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easy" | "medium" | "hard" | "extreme";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Łatwe",
   medium: "Średnie",
   hard: "Trudne",
+  extreme: "Ekstremalne",
 };
 
 const PREVIEW_DISTANCES = [0, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000];
@@ -111,16 +114,18 @@ export default function ScoringSettingsPage() {
     );
   }
 
-  const difficulties: Difficulty[] = ["easy", "medium", "hard"];
+  const difficulties: Difficulty[] = ["easy", "medium", "hard", "extreme"];
   const scaleKeys: Record<Difficulty, keyof Settings> = {
     easy: "scaleEasyM",
     medium: "scaleMediumM",
     hard: "scaleHardM",
+    extreme: "scaleExtremeM",
   };
   const multKeys: Record<Difficulty, keyof Settings> = {
     easy: "multEasy",
     medium: "multMedium",
     hard: "multHard",
+    extreme: "multExtreme",
   };
 
   return (
