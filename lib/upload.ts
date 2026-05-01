@@ -14,7 +14,7 @@ export interface UploadMetadata {
   heading: number;
   altitude: number | null;
   capturedAt: string | null; // ISO
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: "easy" | "medium" | "hard" | "extreme";
 }
 
 export interface UploadProgress {

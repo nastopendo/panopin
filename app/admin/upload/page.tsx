@@ -2,418 +2,505 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
-import { Camera, Check, Loader2, MapPin, Upload as UploadIcon, X } from "lucide-react";
+import {
+  Camera,
+  Check,
+  Loader2,
+  MapPin,
+  Upload as UploadIcon,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Plus,
+} from "lucide-react";
 import { extractExif, type PhotoExif } from "@/lib/exif";
 import { uploadPanorama, type UploadProgress } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), {
-  ssr: false,
-});
-
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easy" | "medium" | "hard" | "extreme";
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: "Łatwy",
   medium: "Średni",
   hard: "Trudny",
+  extreme: "Ekstremalny",
 };
 
+const DIFFICULTY_ACTIVE: Record<Difficulty, string> = {
+  easy: "bg-green-100 text-green-700 border-green-200",
+  medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  hard: "bg-red-100 text-red-700 border-red-200",
+  extreme: "bg-purple-100 text-purple-700 border-purple-200",
+};
+
+type ItemStatus = "idle" | "uploading" | "done" | "error";
+
+interface QueueItem {
+  uid: string;
+  file: File;
+  previewUrl: string;
+  exif: PhotoExif | null;
+  title: string;
+  lat: string;
+  lng: string;
+  difficulty: Difficulty;
+  status: ItemStatus;
+  progress: UploadProgress | null;
+  error: string | null;
+}
+
 export default function UploadPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [exif, setExif] = useState<PhotoExif | null>(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
-  const [manualLat, setManualLat] = useState<string>("");
-  const [manualLng, setManualLng] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const handleFile = useCallback(async (f: File) => {
-    setError(null);
-    setFile(f);
-
-    const url = URL.createObjectURL(f);
-    setPreviewUrl(url);
-
-    try {
-      const parsed = await extractExif(f);
-      setExif(parsed);
-      if (parsed.lat !== null) setManualLat(String(parsed.lat));
-      if (parsed.lng !== null) setManualLng(String(parsed.lng));
-    } catch (e) {
-      console.warn("EXIF parse failed", e);
-      setExif({
-        lat: null,
-        lng: null,
-        altitude: null,
-        capturedAt: null,
-        heading: null,
-        width: null,
-        height: null,
-      });
+  const addFiles = useCallback(async (files: File[]) => {
+    const jpegs = files.filter((f) => f.type === "image/jpeg");
+    if (jpegs.length === 0) {
+      toast.error("Wymagane pliki JPEG (equirectangular 360°)");
+      return;
     }
+    if (jpegs.length < files.length) {
+      toast.warning(`Pominięto ${files.length - jpegs.length} plik(ów) — wymagany format JPEG`);
+    }
+
+    const newItems: QueueItem[] = jpegs.map((file) => ({
+      uid: crypto.randomUUID(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      exif: null,
+      title: file.name.replace(/\.jpe?g$/i, "").replace(/[_-]/g, " "),
+      lat: "",
+      lng: "",
+      difficulty: "medium" as Difficulty,
+      status: "idle" as ItemStatus,
+      progress: null,
+      error: null,
+    }));
+
+    setQueue((prev) => [...prev, ...newItems]);
+
+    await Promise.all(
+      newItems.map(async (item) => {
+        try {
+          const exif = await extractExif(item.file);
+          setQueue((prev) =>
+            prev.map((qi) =>
+              qi.uid === item.uid
+                ? {
+                    ...qi,
+                    exif,
+                    lat: exif.lat !== null ? String(exif.lat) : qi.lat,
+                    lng: exif.lng !== null ? String(exif.lng) : qi.lng,
+                  }
+                : qi,
+            ),
+          );
+        } catch {
+          setQueue((prev) =>
+            prev.map((qi) =>
+              qi.uid === item.uid
+                ? {
+                    ...qi,
+                    exif: {
+                      lat: null,
+                      lng: null,
+                      altitude: null,
+                      capturedAt: null,
+                      heading: null,
+                      width: null,
+                      height: null,
+                    },
+                  }
+                : qi,
+            ),
+          );
+        }
+      }),
+    );
   }, []);
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragActive(false);
-    const f = e.dataTransfer.files[0];
-    if (f?.type === "image/jpeg") handleFile(f);
-    else setError("Wymagany plik JPEG (equirectangular 360°)");
+    addFiles(Array.from(e.dataTransfer.files));
   }
 
   function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (f) handleFile(f);
+    if (e.target.files) addFiles(Array.from(e.target.files));
+    e.target.value = "";
   }
 
-  function reset() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setFile(null);
-    setPreviewUrl(null);
-    setExif(null);
-    setTitle("");
-    setDescription("");
-    setDifficulty("medium");
-    setManualLat("");
-    setManualLng("");
-    setError(null);
-    if (inputRef.current) inputRef.current.value = "";
+  function removeItem(uid: string) {
+    setQueue((prev) => {
+      const item = prev.find((i) => i.uid === uid);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((i) => i.uid !== uid);
+    });
   }
 
-  async function handleUpload() {
-    setLoading(true);
-    setError(null);
-    setProgress(null);
+  function updateItem(uid: string, patch: Partial<QueueItem>) {
+    setQueue((prev) => prev.map((i) => (i.uid === uid ? { ...i, ...patch } : i)));
+  }
 
-    const lat = parseFloat(manualLat);
-    const lng = parseFloat(manualLng);
+  async function uploadAll() {
+    const idle = queue.filter((i) => i.status === "idle");
+    if (idle.length === 0) return;
 
-    if (!file) {
-      setError("Brak pliku");
-      setLoading(false);
-      return;
-    }
-    if (isNaN(lat) || isNaN(lng)) {
-      setError("Brak lub niepoprawne współrzędne");
-      setLoading(false);
+    const invalid = idle.filter((item) => {
+      const lat = parseFloat(item.lat);
+      const lng = parseFloat(item.lng);
+      return isNaN(lat) || isNaN(lng);
+    });
+    if (invalid.length > 0) {
+      invalid.forEach((item) => updateItem(item.uid, { error: "Brak lub niepoprawne współrzędne" }));
+      toast.error("Uzupełnij współrzędne GPS dla wszystkich zdjęć");
       return;
     }
 
-    try {
-      await uploadPanorama(
-        file,
-        {
-          id: crypto.randomUUID(),
-          title: title.trim() || null,
-          description: description.trim() || null,
-          lat,
-          lng,
-          heading: exif?.heading ?? 0,
-          altitude: exif?.altitude ?? null,
-          capturedAt: exif?.capturedAt ? new Date(exif.capturedAt).toISOString() : null,
-          difficulty,
-        },
-        setProgress,
-      );
-      toast.success("Zdjęcie dodane do bazy");
+    setUploading(true);
+    let errorCount = 0;
+
+    for (const item of idle) {
+      const lat = parseFloat(item.lat);
+      const lng = parseFloat(item.lng);
+
+      updateItem(item.uid, { status: "uploading", error: null, progress: null });
+
+      try {
+        await uploadPanorama(
+          item.file,
+          {
+            id: crypto.randomUUID(),
+            title: item.title.trim() || null,
+            description: null,
+            lat,
+            lng,
+            heading: item.exif?.heading ?? 0,
+            altitude: item.exif?.altitude ?? null,
+            capturedAt: item.exif?.capturedAt
+              ? new Date(item.exif.capturedAt).toISOString()
+              : null,
+            difficulty: item.difficulty,
+          },
+          (progress) => updateItem(item.uid, { progress }),
+        );
+        updateItem(item.uid, {
+          status: "done",
+          progress: { stage: "done", generated: 0, total: 0, uploaded: 0 },
+        });
+        toast.success(`Dodano: „${item.title.trim() || item.file.name}"`);
+      } catch (e) {
+        errorCount++;
+        updateItem(item.uid, {
+          status: "error",
+          error: e instanceof Error ? e.message : "Nieznany błąd uploadu",
+        });
+        toast.error(`Błąd: „${item.title.trim() || item.file.name}"`);
+      }
+    }
+
+    setUploading(false);
+    if (errorCount === 0) {
       router.push("/admin/photos");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Nieznany błąd uploadu");
-      setLoading(false);
     }
   }
 
-  if (!file) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Upload panoramy</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Wgraj zdjęcie equirectangular 360°. Kafelki zostaną wygenerowane w Twojej przeglądarce — to może chwilę zająć.
-          </p>
-        </header>
+  const idleCount = queue.filter((i) => i.status === "idle").length;
+  const doneCount = queue.filter((i) => i.status === "done").length;
+  const errorCount = queue.filter((i) => i.status === "error").length;
 
-        <label
-          onDrop={handleDrop}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          className={cn(
-            "block border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200",
-            dragActive
-              ? "border-brand bg-brand/5 scale-[1.005]"
-              : "border-border bg-card/40 hover:border-foreground/30 hover:bg-card/60",
-          )}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg"
-            onChange={handleSelect}
-            className="hidden"
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <header className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Upload panoram</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Wgraj jedno lub wiele zdjęć equirectangular 360°. Kafelki generowane są w przeglądarce.
+          </p>
+        </div>
+        {queue.length > 0 && (
+          <Button onClick={uploadAll} disabled={uploading || idleCount === 0} variant="brand">
+            {uploading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Przetwarzanie…
+              </>
+            ) : (
+              <>
+                <UploadIcon />
+                {idleCount > 1 ? `Wyślij wszystkie (${idleCount})` : "Wyślij"}
+              </>
+            )}
+          </Button>
+        )}
+      </header>
+
+      {/* Drop zone */}
+      <label
+        onDrop={handleDrop}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={() => setDragActive(false)}
+        className={cn(
+          "block border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200",
+          queue.length === 0 ? "p-12 text-center" : "p-4",
+          dragActive
+            ? "border-brand bg-brand/5 scale-[1.005]"
+            : "border-border bg-card/40 hover:border-foreground/30 hover:bg-card/60",
+        )}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg"
+          multiple
+          onChange={handleSelect}
+          className="hidden"
+        />
+        {queue.length === 0 ? (
+          <>
+            <div
+              className={cn(
+                "size-14 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors",
+                dragActive ? "bg-brand/15" : "bg-secondary",
+              )}
+            >
+              <Camera
+                className={cn("size-7", dragActive ? "text-brand" : "text-muted-foreground")}
+                strokeWidth={1.6}
+              />
+            </div>
+            <div className="font-medium mb-1">Przeciągnij pliki JPG 360° lub kliknij</div>
+            <div className="text-sm text-muted-foreground">
+              Equirectangular, 2:1 aspect ratio · Możesz wybrać wiele plików naraz
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-3 text-sm">
+            <div
+              className={cn(
+                "size-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                dragActive ? "bg-brand/15" : "bg-secondary",
+              )}
+            >
+              <Plus
+                className={cn("size-4", dragActive ? "text-brand" : "text-muted-foreground")}
+              />
+            </div>
+            <span className="text-muted-foreground">Dodaj kolejne pliki JPG 360°</span>
+          </div>
+        )}
+      </label>
+
+      {/* Queue */}
+      {queue.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              {queue.length}{" "}
+              {queue.length === 1 ? "zdjęcie" : queue.length < 5 ? "zdjęcia" : "zdjęć"} w
+              kolejce
+            </span>
+            {(doneCount > 0 || errorCount > 0) && (
+              <span className="flex items-center gap-3">
+                {doneCount > 0 && (
+                  <span className="text-success flex items-center gap-1">
+                    <CheckCircle2 className="size-3.5" />
+                    {doneCount} gotowe
+                  </span>
+                )}
+                {errorCount > 0 && (
+                  <span className="text-destructive flex items-center gap-1">
+                    <AlertCircle className="size-3.5" />
+                    {errorCount} błąd
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+
+          {queue.map((item) => (
+            <QueueItemCard
+              key={item.uid}
+              item={item}
+              uploading={uploading}
+              onRemove={() => removeItem(item.uid)}
+              onUpdate={(patch) => updateItem(item.uid, patch)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface QueueItemCardProps {
+  item: QueueItem;
+  uploading: boolean;
+  onRemove: () => void;
+  onUpdate: (patch: Partial<QueueItem>) => void;
+}
+
+function QueueItemCard({ item, uploading, onRemove, onUpdate }: QueueItemCardProps) {
+  const isActive = item.status === "uploading";
+  const isDone = item.status === "done";
+  const isError = item.status === "error";
+  const isIdle = item.status === "idle";
+
+  const progress = item.progress;
+  let pct = 0;
+  if (isDone) {
+    pct = 100;
+  } else if (isActive && progress) {
+    if (progress.stage === "init") pct = 2;
+    else if (progress.stage === "generate" && progress.total > 0)
+      pct = Math.round((progress.generated / progress.total) * 50);
+    else if (progress.stage === "upload" && progress.total > 0)
+      pct = 50 + Math.round((progress.uploaded / progress.total) * 44);
+    else if (progress.stage === "save") pct = 96;
+    else if (progress.stage === "done") pct = 100;
+  }
+
+  const stageText =
+    isActive && progress
+      ? {
+          init: "Inicjalizacja…",
+          generate: `Generowanie kafelków ${progress.generated}/${progress.total}`,
+          upload: `Wysyłanie kafelków ${progress.uploaded}/${progress.total}`,
+          save: "Zapisywanie…",
+          done: "Gotowe!",
+        }[progress.stage]
+      : null;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border bg-card overflow-hidden transition-opacity",
+        isDone && "opacity-60",
+        isError && "border-destructive/40",
+      )}
+    >
+      <div className="flex gap-3 p-3">
+        {/* Thumbnail */}
+        <div className="w-24 h-16 rounded-lg overflow-hidden bg-secondary shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.previewUrl}
+            alt={item.title || item.file.name}
+            className="w-full h-full object-cover"
           />
+        </div>
+
+        {/* Fields */}
+        <div className="flex-1 min-w-0 space-y-2">
+          {/* Title row */}
+          <div className="flex items-center gap-2">
+            <Input
+              value={item.title}
+              onChange={(e) => onUpdate({ title: e.target.value })}
+              placeholder="Tytuł (opcjonalnie)"
+              className="h-7 text-sm"
+              disabled={!isIdle}
+            />
+            {isActive && <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />}
+            {isDone && <CheckCircle2 className="size-4 shrink-0 text-success" />}
+            {isError && <AlertCircle className="size-4 shrink-0 text-destructive" />}
+            <button
+              onClick={onRemove}
+              disabled={isActive || (uploading && isIdle)}
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
+              aria-label="Usuń z kolejki"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+
+          {/* Coords row */}
+          {isIdle && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <MapPin className="size-3 text-muted-foreground shrink-0" />
+              <Input
+                value={item.lat}
+                onChange={(e) => onUpdate({ lat: e.target.value, error: null })}
+                placeholder="Szer. (lat)"
+                className={cn(
+                  "h-7 text-xs font-mono w-28",
+                  item.error && !item.lat && "border-destructive",
+                )}
+                inputMode="decimal"
+              />
+              <Input
+                value={item.lng}
+                onChange={(e) => onUpdate({ lng: e.target.value, error: null })}
+                placeholder="Dług. (lng)"
+                className={cn(
+                  "h-7 text-xs font-mono w-28",
+                  item.error && !item.lng && "border-destructive",
+                )}
+                inputMode="decimal"
+              />
+              {item.exif?.lat && item.exif?.lng && (
+                <span className="text-xs text-success flex items-center gap-1">
+                  <Check className="size-3" />
+                  GPS
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Difficulty row */}
+          {isIdle && (
+            <div className="flex gap-1 flex-wrap">
+              {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => onUpdate({ difficulty: d })}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-xs font-medium border transition-all",
+                    item.difficulty === d
+                      ? DIFFICULTY_ACTIVE[d]
+                      : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
+                  )}
+                >
+                  {DIFFICULTY_LABELS[d]}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Status / error text */}
+          {isActive && stageText && (
+            <p className="text-xs text-muted-foreground">{stageText}</p>
+          )}
+          {isDone && (
+            <p className="text-xs text-success">Przesłano pomyślnie</p>
+          )}
+          {isError && item.error && (
+            <p className="text-xs text-destructive">{item.error}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {(isActive || isDone) && (
+        <div className="h-1 bg-secondary">
           <div
             className={cn(
-              "size-14 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors",
-              dragActive ? "bg-brand/15" : "bg-secondary",
+              "h-full transition-[width] duration-300",
+              isDone ? "bg-success" : "bg-brand",
             )}
-          >
-            <Camera className={cn("size-7", dragActive ? "text-brand" : "text-muted-foreground")} strokeWidth={1.6} />
-          </div>
-          <div className="font-medium mb-1">Przeciągnij plik JPG 360° lub kliknij</div>
-          <div className="text-sm text-muted-foreground">
-            Equirectangular, 2:1 aspect ratio (np. 8192×4096 px)
-          </div>
-          {error && (
-            <div role="alert" className="mt-4 text-destructive text-sm">
-              {error}
-            </div>
-          )}
-        </label>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight">Upload panoramy</h1>
-          <p className="text-sm text-muted-foreground truncate">{file.name}</p>
+            style={{ width: `${pct}%` }}
+          />
         </div>
-        <Button onClick={reset} disabled={loading} variant="ghost" size="sm">
-          <X />
-          Zmień plik
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-3">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Podgląd
-          </Label>
-          <div className="bg-card rounded-xl overflow-hidden h-[400px] border">
-            {previewUrl && (
-              <PanoramaViewer equirectUrl={previewUrl} className="w-full h-full" />
-            )}
-          </div>
-          {exif && (
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <InfoRow
-                label="GPS"
-                value={
-                  exif.lat && exif.lng
-                    ? `${exif.lat.toFixed(5)}, ${exif.lng.toFixed(5)}`
-                    : "brak"
-                }
-                ok={!!(exif.lat && exif.lng)}
-              />
-              <InfoRow
-                label="Data"
-                value={
-                  exif.capturedAt
-                    ? new Date(exif.capturedAt).toLocaleString("pl")
-                    : "brak"
-                }
-                ok={!!exif.capturedAt}
-              />
-              <InfoRow
-                label="Heading"
-                value={exif.heading !== null ? `${exif.heading.toFixed(1)}°` : "brak"}
-                ok={exif.heading !== null}
-              />
-              <InfoRow
-                label="Rozmiar"
-                value={
-                  exif.width && exif.height
-                    ? `${exif.width}×${exif.height}`
-                    : "?"
-                }
-                ok
-              />
-            </div>
-          )}
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Metadane</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="title">Tytuł (opcjonalnie)</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="np. Rynek w Sanoku"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="description">Opis (opcjonalnie)</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-                className="min-h-0 resize-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="lat" className="flex items-center gap-1.5">
-                  <MapPin className="size-3.5" />
-                  Szerokość
-                </Label>
-                <Input
-                  id="lat"
-                  value={manualLat}
-                  onChange={(e) => setManualLat(e.target.value)}
-                  placeholder="52.229676"
-                  inputMode="decimal"
-                  className="font-mono"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="lng" className="flex items-center gap-1.5">
-                  <MapPin className="size-3.5" />
-                  Długość
-                </Label>
-                <Input
-                  id="lng"
-                  value={manualLng}
-                  onChange={(e) => setManualLng(e.target.value)}
-                  placeholder="21.012229"
-                  inputMode="decimal"
-                  className="font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Trudność</Label>
-              <ToggleGroup
-                type="single"
-                value={difficulty}
-                onValueChange={(v) => v && setDifficulty(v as Difficulty)}
-                className="w-full"
-              >
-                {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((d) => (
-                  <ToggleGroupItem
-                    key={d}
-                    value={d}
-                    aria-label={DIFFICULTY_LABELS[d]}
-                    className="flex-1"
-                  >
-                    {DIFFICULTY_LABELS[d]}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-
-            {error && (
-              <div
-                role="alert"
-                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-              >
-                {error}
-              </div>
-            )}
-
-            {progress && <ProgressPanel progress={progress} />}
-
-            <Button
-              onClick={handleUpload}
-              disabled={loading}
-              variant="brand"
-              size="lg"
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" />
-                  Przetwarzanie…
-                </>
-              ) : (
-                <>
-                  <UploadIcon />
-                  Generuj kafelki i wyślij
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function ProgressPanel({ progress }: { progress: UploadProgress }) {
-  const { stage, generated, total, uploaded } = progress;
-  const pct = total > 0 ? Math.round((uploaded / total) * 100) : 0;
-
-  const stageText = {
-    init: "Inicjalizacja…",
-    generate: `Generowanie kafelków ${generated}/${total}`,
-    upload: `Wysyłanie kafelków ${uploaded}/${total}`,
-    save: "Zapisywanie rekordu…",
-    done: "Gotowe!",
-  }[stage];
-
-  return (
-    <div className="bg-secondary/50 border rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-foreground">{stageText}</span>
-        <span className="text-muted-foreground tabular-nums">{pct}%</span>
-      </div>
-      <div className="h-1.5 bg-background rounded-full overflow-hidden">
-        <div
-          className="h-full bg-brand transition-[width] duration-300"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function InfoRow({
-  label,
-  value,
-  ok,
-}: {
-  label: string;
-  value: string;
-  ok: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between bg-card/40 border rounded-lg px-3 py-2">
-      <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
-        {ok && <Check className="size-3 text-success" />}
-        {label}
-      </span>
-      <span className={cn(ok ? "text-foreground font-medium" : "text-muted-foreground/60")}>
-        {value}
-      </span>
+      )}
     </div>
   );
 }
