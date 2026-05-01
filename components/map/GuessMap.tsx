@@ -43,18 +43,24 @@ export default function GuessMap({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const guessMarkerRef = useRef<maplibregl.Marker | null>(null);
   const actualMarkerRef = useRef<maplibregl.Marker | null>(null);
-  // Use a ref for disabled so the click handler never captures a stale value
   const disabledRef = useRef(disabled);
   const onPinChangeRef = useRef(onPinChange);
+  const initialCenterRef = useRef(initialCenter);
+  const initialZoomRef = useRef(initialZoom);
   const [pin, setPin] = useState<GuessResult | null>(null);
 
   useEffect(() => {
     onPinChangeRef.current = onPinChange;
   }, [onPinChange]);
-
   useEffect(() => {
     disabledRef.current = disabled;
   }, [disabled]);
+  useEffect(() => {
+    initialCenterRef.current = initialCenter;
+  }, [initialCenter]);
+  useEffect(() => {
+    initialZoomRef.current = initialZoom;
+  }, [initialZoom]);
 
   // Initialize map once
   useEffect(() => {
@@ -126,6 +132,12 @@ export default function GuessMap({
     if (map.getLayer("guess-line")) map.removeLayer("guess-line");
     if (map.getSource("guess-line")) map.removeSource("guess-line");
 
+    map.flyTo({
+      center: initialCenterRef.current,
+      zoom: initialZoomRef.current,
+      duration: 600,
+    });
+
     setPin(null);
     onPinChangeRef.current?.(null);
   }, [stepKey]);
@@ -178,8 +190,7 @@ export default function GuessMap({
         .extend([actualLocation.lng, actualLocation.lat]);
       map.fitBounds(bounds, {
         padding: 140,
-        maxZoom: 50,
-        minZoom: 5,
+        maxZoom: 30,
         duration: 900,
         linear: true,
       });
