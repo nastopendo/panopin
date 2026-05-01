@@ -8,6 +8,8 @@ export interface TileManifest {
   photoId: string;
   baseUrl: string;
   heading?: number;
+  /** Default horizontal view angle in degrees (-180…180). Null/undefined falls back to -90°. */
+  defaultYaw?: number | null;
   levels: Array<{
     faceSize: number;
     nbTiles: number;
@@ -17,12 +19,17 @@ export interface TileManifest {
 interface Props {
   equirectUrl?: string;
   tilesManifest?: TileManifest;
+  /** Override initial yaw in degrees. Takes precedence over tilesManifest.defaultYaw. */
+  defaultYaw?: number;
+  onViewerReady?: (viewer: ViewerType) => void;
   className?: string;
 }
 
-export default function PanoramaViewer({ equirectUrl, tilesManifest, className }: Props) {
+export default function PanoramaViewer({ equirectUrl, tilesManifest, defaultYaw, onViewerReady, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<ViewerType | null>(null);
+  const onViewerReadyRef = useRef(onViewerReady);
+  onViewerReadyRef.current = onViewerReady;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -34,10 +41,13 @@ export default function PanoramaViewer({ equirectUrl, tilesManifest, className }
       const { Viewer } = await import("@photo-sphere-viewer/core");
       if (destroyed || !containerRef.current) return;
 
+      // Priority: explicit prop > tilesManifest.defaultYaw > -90° (center of first fisheye lens)
+      const yawDeg = defaultYaw ?? tilesManifest?.defaultYaw ?? -90;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const config: any = {
         container: containerRef.current,
-        defaultYaw: tilesManifest?.heading ?? 0,
+        defaultYaw: (yawDeg * Math.PI) / 180,
         touchmoveTwoFingers: false,
         navbar: ["zoom", "fullscreen"],
         loadingTxt: "Ładowanie…",
@@ -73,6 +83,7 @@ export default function PanoramaViewer({ equirectUrl, tilesManifest, className }
       });
 
       viewerRef.current = viewer;
+      onViewerReadyRef.current?.(viewer);
     }
 
     init().catch((e) => console.error("[PanoramaViewer] init error:", e));

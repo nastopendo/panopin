@@ -25,6 +25,7 @@ export async function GET() {
     tileBaseUrl: p.tileBaseUrl,
     tileManifest: p.tileManifest,
     heading: p.heading,
+    defaultYaw: p.defaultYaw,
     lat: p.lat,
     lng: p.lng,
     difficulty: p.difficulty,

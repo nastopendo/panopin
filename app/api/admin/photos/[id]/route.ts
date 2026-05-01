@@ -11,6 +11,7 @@ const patchSchema = z.object({
   lng: z.number().min(-180).max(180).optional(),
   difficulty: z.enum(["easy", "medium", "hard", "extreme"]).optional(),
   tagIds: z.array(z.string().uuid()).optional(),
+  defaultYaw: z.number().min(-180).max(180).nullable().optional(),
 });
 
 export async function PATCH(
@@ -25,13 +26,14 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { title, lat, lng, difficulty, tagIds } = parsed.data;
+  const { title, lat, lng, difficulty, tagIds, defaultYaw } = parsed.data;
 
   const scalarPatch: Record<string, unknown> = { updatedAt: new Date() };
   if (title !== undefined) scalarPatch.title = title;
   if (lat !== undefined) scalarPatch.lat = lat;
   if (lng !== undefined) scalarPatch.lng = lng;
   if (difficulty !== undefined) scalarPatch.difficulty = difficulty;
+  if (defaultYaw !== undefined) scalarPatch.defaultYaw = defaultYaw;
 
   if (Object.keys(scalarPatch).length > 1) {
     await db.update(photos).set(scalarPatch).where(eq(photos.id, id));

@@ -12,9 +12,10 @@ const BodySchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   heading: z.number().optional().default(0),
+  defaultYaw: z.number().min(-180).max(180).optional().default(-90),
   altitude: z.number().nullable().optional(),
   capturedAt: z.string().datetime().nullable().optional(),
-  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+  difficulty: z.enum(["easy", "medium", "hard", "extreme"]).default("medium"),
   tileLevels: z.array(
     z.object({
       faceSize: z.number().int(),
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
       lat: body.lat,
       lng: body.lng,
       heading: body.heading ?? 0,
+      defaultYaw: body.defaultYaw,
       altitude: body.altitude ?? null,
       capturedAt: body.capturedAt ? new Date(body.capturedAt) : null,
       difficulty: body.difficulty,

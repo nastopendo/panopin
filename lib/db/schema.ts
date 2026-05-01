@@ -59,6 +59,7 @@ export const photos = pgTable("photos", {
   tileManifest: jsonb("tile_manifest"),
   originalUrl: text("original_url"),
   thumbnailUrl: text("thumbnail_url"),
+  defaultYaw: doublePrecision("default_yaw"),
   createdAt: timestamptz("created_at").defaultNow().notNull(),
   updatedAt: timestamptz("updated_at").defaultNow().notNull(),
 });

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Eye, Pencil, Plus, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2, Image as ImageIcon, Loader2, Crosshair } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,7 @@ interface Photo {
   tileBaseUrl: string | null;
   tileManifest: StoredManifest | null;
   heading: number;
+  defaultYaw: number | null;
   lat: number;
   lng: number;
   difficulty: "easy" | "medium" | "hard" | "extreme";
@@ -68,6 +69,7 @@ interface EditDraft {
   lng: string;
   difficulty: Difficulty;
   tagIds: string[];
+  defaultYaw: string;
 }
 
 export default function AdminPhotosPage() {
@@ -77,13 +79,15 @@ export default function AdminPhotosPage() {
 
   // Edit dialog
   const [editPhoto, setEditPhoto] = useState<Photo | null>(null);
-  const [draft, setDraft] = useState<EditDraft>({ title: "", lat: "", lng: "", difficulty: "medium", tagIds: [] });
+  const [draft, setDraft] = useState<EditDraft>({ title: "", lat: "", lng: "", difficulty: "medium", tagIds: [], defaultYaw: "-90" });
   const [latError, setLatError] = useState("");
   const [lngError, setLngError] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   // Preview dialog
   const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null);
+  const previewViewerRef = useRef<{ getPosition: () => { yaw: number } } | null>(null);
+  const [savingDefaultYaw, setSavingDefaultYaw] = useState(false);
 
   // Delete dialog
   const [pendingDelete, setPendingDelete] = useState<Photo | null>(null);
@@ -113,6 +117,9 @@ export default function AdminPhotosPage() {
       lng: photo.lng.toString(),
       difficulty: photo.difficulty,
       tagIds: [...photo.tagIds],
+      defaultYaw: photo.defaultYaw !== null && photo.defaultYaw !== undefined
+        ? String(photo.defaultYaw)
+        : "-90",
     });
     setLatError("");
     setLngError("");
@@ -152,6 +159,8 @@ export default function AdminPhotosPage() {
     setEditSaving(true);
     const lat = parseFloat(draft.lat);
     const lng = parseFloat(draft.lng);
+    const defaultYawParsed = parseFloat(draft.defaultYaw);
+    const defaultYaw = isNaN(defaultYawParsed) ? null : Math.max(-180, Math.min(180, Math.round(defaultYawParsed)));
     const res = await fetch(`/api/admin/photos/${editPhoto.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -161,6 +170,7 @@ export default function AdminPhotosPage() {
         lng,
         difficulty: draft.difficulty,
         tagIds: draft.tagIds,
+        defaultYaw,
       }),
     });
     setEditSaving(false);
@@ -171,12 +181,34 @@ export default function AdminPhotosPage() {
     setPhotos((prev) =>
       prev.map((p) =>
         p.id === editPhoto.id
-          ? { ...p, title: draft.title.trim() || null, lat, lng, difficulty: draft.difficulty, tagIds: draft.tagIds }
+          ? { ...p, title: draft.title.trim() || null, lat, lng, difficulty: draft.difficulty, tagIds: draft.tagIds, defaultYaw }
           : p,
       ),
     );
     setEditPhoto(null);
     toast.success("Zdjęcie zaktualizowane");
+  }
+
+  async function setAsDefaultView() {
+    if (!previewPhoto || !previewViewerRef.current) return;
+    setSavingDefaultYaw(true);
+    const yawRad = previewViewerRef.current.getPosition().yaw;
+    const yawDeg = yawRad * (180 / Math.PI);
+    const normalized = Math.round(((yawDeg % 360) + 540) % 360 - 180);
+    const res = await fetch(`/api/admin/photos/${previewPhoto.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ defaultYaw: normalized }),
+    });
+    setSavingDefaultYaw(false);
+    if (!res.ok) {
+      toast.error("Nie udało się zapisać widoku");
+      return;
+    }
+    setPhotos((prev) =>
+      prev.map((p) => p.id === previewPhoto.id ? { ...p, defaultYaw: normalized } : p),
+    );
+    toast.success(`Domyślny widok ustawiony na ${normalized}°`);
   }
 
   async function confirmDelete() {
@@ -198,6 +230,7 @@ export default function AdminPhotosPage() {
       photoId: photo.id,
       baseUrl: photo.tileBaseUrl,
       heading: photo.heading,
+      defaultYaw: photo.defaultYaw,
       levels: photo.tileManifest.levels,
     };
   }
@@ -389,6 +422,32 @@ export default function AdminPhotosPage() {
               </div>
             </div>
 
+            {/* Default yaw */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-default-yaw">Domyślny kąt widoku (°)</Label>
+                <button
+                  type="button"
+                  onClick={() => setDraft((d) => ({ ...d, defaultYaw: "-90" }))}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Reset do −90°
+                </button>
+              </div>
+              <Input
+                id="edit-default-yaw"
+                type="number"
+                step="1"
+                min={-180}
+                max={180}
+                value={draft.defaultYaw}
+                onChange={(e) => setDraft((d) => ({ ...d, defaultYaw: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                0° = środek zdjęcia · −90° = lewa ćwiartka (domyślne dla kamer dual-fisheye)
+              </p>
+            </div>
+
             {/* Location picker */}
             <div className="space-y-1.5">
               <Label>Lokalizacja na mapie</Label>
@@ -468,7 +527,15 @@ export default function AdminPhotosPage() {
       </Dialog>
 
       {/* ── 360° preview dialog ── */}
-      <Dialog open={previewPhoto !== null} onOpenChange={(open) => !open && setPreviewPhoto(null)}>
+      <Dialog
+        open={previewPhoto !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewPhoto(null);
+            previewViewerRef.current = null;
+          }
+        }}
+      >
         <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Podgląd 360°</DialogTitle>
@@ -478,17 +545,35 @@ export default function AdminPhotosPage() {
               <PanoramaViewer
                 key={previewPhoto.id}
                 tilesManifest={buildTilesManifest(previewPhoto)}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onViewerReady={(v: any) => { previewViewerRef.current = v; }}
                 className="w-full h-full"
               />
             )}
           </div>
-          <div className="px-4 py-2 border-t bg-card/60 flex items-center justify-between text-sm">
+          <div className="px-4 py-2 border-t bg-card/60 flex items-center justify-between text-sm gap-3">
             <span className="font-medium truncate">
               {previewPhoto?.title ?? <span className="text-muted-foreground italic">(bez tytułu)</span>}
             </span>
-            <span className="text-muted-foreground font-mono text-xs shrink-0 ml-4">
-              {previewPhoto?.lat.toFixed(5)}, {previewPhoto?.lng.toFixed(5)}
-            </span>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-muted-foreground font-mono text-xs">
+                {previewPhoto?.lat.toFixed(5)}, {previewPhoto?.lng.toFixed(5)}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={setAsDefaultView}
+                disabled={savingDefaultYaw}
+                title="Zapisz bieżący kierunek panoramy jako domyślny widok"
+              >
+                {savingDefaultYaw ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Crosshair className="size-3.5" />
+                )}
+                Ustaw widok domyślny
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

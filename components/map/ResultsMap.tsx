@@ -16,6 +16,7 @@ export interface ResultsMapPhoto {
   photoId: string;
   tileBaseUrl: string;
   heading: number;
+  defaultYaw?: number | null;
   tileLevels: Array<{ faceSize: number; nbTiles: number }>;
 }
 

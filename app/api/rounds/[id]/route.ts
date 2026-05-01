@@ -23,6 +23,7 @@ export async function GET(
         id: photos.id,
         tileBaseUrl: photos.tileBaseUrl,
         heading: photos.heading,
+        defaultYaw: photos.defaultYaw,
         tileManifest: photos.tileManifest,
       })
       .from(photos)
@@ -55,6 +56,7 @@ export async function GET(
       photoId: p.id,
       tileBaseUrl: p.tileBaseUrl ?? "",
       heading: p.heading,
+      defaultYaw: p.defaultYaw,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tileLevels: (p.tileManifest as any)?.levels ?? [],
       tags: tagsByPhotoId[pid] ?? [],

@@ -12,6 +12,7 @@ export interface UploadMetadata {
   lat: number;
   lng: number;
   heading: number;
+  defaultYaw: number;
   altitude: number | null;
   capturedAt: string | null; // ISO
   difficulty: "easy" | "medium" | "hard" | "extreme";

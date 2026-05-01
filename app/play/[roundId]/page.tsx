@@ -39,6 +39,7 @@ interface RoundPhoto {
   photoId: string;
   tileBaseUrl: string;
   heading: number;
+  defaultYaw?: number | null;
   tileLevels: Array<{ faceSize: number; nbTiles: number }>;
   tags: { id: string; name: string; color: string }[];
 }
@@ -305,6 +306,7 @@ export default function RoundPage() {
         photoId: currentPhoto.photoId,
         baseUrl: currentPhoto.tileBaseUrl,
         heading: currentPhoto.heading,
+        defaultYaw: currentPhoto.defaultYaw,
         levels: currentPhoto.tileLevels,
       }
     : undefined;
@@ -619,6 +621,7 @@ function PhotoModal({
     photoId: photo.photoId,
     baseUrl: photo.tileBaseUrl,
     heading: photo.heading,
+    defaultYaw: photo.defaultYaw,
     levels: photo.tileLevels,
   };
 

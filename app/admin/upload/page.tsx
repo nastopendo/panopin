@@ -47,6 +47,7 @@ interface QueueItem {
   lat: string;
   lng: string;
   difficulty: Difficulty;
+  defaultYaw: number;
   status: ItemStatus;
   progress: UploadProgress | null;
   error: string | null;
@@ -78,6 +79,7 @@ export default function UploadPage() {
       lat: "",
       lng: "",
       difficulty: "medium" as Difficulty,
+      defaultYaw: -90,
       status: "idle" as ItemStatus,
       progress: null,
       error: null,
@@ -182,6 +184,7 @@ export default function UploadPage() {
             lat,
             lng,
             heading: item.exif?.heading ?? 0,
+            defaultYaw: item.defaultYaw,
             altitude: item.exif?.altitude ?? null,
             capturedAt: item.exif?.capturedAt
               ? new Date(item.exif.capturedAt).toISOString()
@@ -473,6 +476,34 @@ function QueueItemCard({ item, uploading, onRemove, onUpdate }: QueueItemCardPro
                   {DIFFICULTY_LABELS[d]}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Default yaw row */}
+          {isIdle && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Widok domyślny (°)</span>
+              <Input
+                type="number"
+                step="1"
+                min={-180}
+                max={180}
+                value={item.defaultYaw}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  onUpdate({ defaultYaw: isNaN(v) ? -90 : Math.max(-180, Math.min(180, v)) });
+                }}
+                className="h-7 text-xs font-mono w-20"
+                inputMode="numeric"
+              />
+              {item.defaultYaw !== -90 && (
+                <button
+                  onClick={() => onUpdate({ defaultYaw: -90 })}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           )}
 
