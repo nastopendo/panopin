@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieBanner } from "@/components/CookieBanner";
+import { SwetrixAnalytics } from "@/components/SwetrixAnalytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,6 +79,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <SwetrixAnalytics />
         <CookieBanner />
         <Toaster position="bottom-right" richColors />
       </body>
