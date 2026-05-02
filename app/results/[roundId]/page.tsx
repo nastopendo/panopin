@@ -48,7 +48,7 @@ export async function generateMetadata({
 
   return {
     title: `${score} pkt w Panopin`,
-    description: `Sprawdź czy pobijesz mój wynik ${score} punktów z 5 lokalizacji.`,
+    description: `Zdobyłem ${score} pkt z 5 lokalizacji w Panopin. A ile Ty zdobędziesz?`,
     openGraph: {
       type: "website",
       url: pageUrl,

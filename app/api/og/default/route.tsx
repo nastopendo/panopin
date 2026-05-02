@@ -47,13 +47,25 @@ export async function GET() {
                 justifyContent: "center",
                 width: 64,
                 height: 64,
-                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                borderRadius: 16,
+                background: "linear-gradient(135deg, #E8AA3C 0%, #B5811C 100%)",
+                borderRadius: 14,
                 marginRight: 18,
-                fontSize: 36,
+                boxShadow: "0 0 32px rgba(232,170,60,0.55)",
               }}
             >
-              📍
+              <svg
+                width="38"
+                height="38"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#2A1900"
+                strokeWidth={2.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 13a9 9 0 0 1 18 0" />
+                <circle cx="12" cy="14.5" r="2.5" fill="#2A1900" stroke="none" />
+              </svg>
             </div>
             <span
               style={{
@@ -69,16 +81,16 @@ export async function GET() {
 
           <span
             style={{
-              fontSize: 68,
+              fontSize: 72,
               fontWeight: 900,
               lineHeight: 1.05,
               color: "white",
               letterSpacing: -2,
-              maxWidth: 900,
+              maxWidth: 950,
               marginBottom: 24,
             }}
           >
-            Zgadnij gdzie zrobiono panoramę 360°
+            Jak dobrze znasz swoją okolicę?
           </span>
 
           <span
@@ -86,11 +98,11 @@ export async function GET() {
               fontSize: 26,
               color: "rgba(255,255,255,0.55)",
               fontWeight: 500,
-              maxWidth: 850,
+              maxWidth: 900,
               lineHeight: 1.35,
             }}
           >
-            5 lokalizacji, mapa świata, im bliżej tym więcej punktów
+            Obejrzyj panoramę 360° i postaw pinezkę. 5 lokalizacji w rundzie — im celniej tym więcej punktów.
           </span>
         </div>
 
@@ -110,13 +122,13 @@ export async function GET() {
             style={{
               display: "flex",
               alignItems: "center",
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+              background: "linear-gradient(135deg, #E8AA3C 0%, #B5811C 100%)",
               borderRadius: 11,
               padding: "12px 28px",
             }}
           >
-            <span style={{ fontSize: 19, fontWeight: 700, color: "white" }}>
-              Zagraj teraz — to darmowe!
+            <span style={{ fontSize: 19, fontWeight: 700, color: "#2A1900" }}>
+              Sprawdź się →
             </span>
           </div>
         </div>

@@ -20,20 +20,20 @@ const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og/default`;
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Panopin — Zgadnij gdzie zrobiono panoramę 360°",
+    default: "Panopin — sprawdź jak dobrze znasz swoją okolicę",
     template: "%s · Panopin",
   },
   description:
-    "Otwartoźródłowa gra geo-zgadywanka oparta o panoramy 360° z Twojej okolicy. " +
-    "Obejrzyj zdjęcie, postaw pinezkę, zdobywaj punkty.",
+    "Obejrzyj panoramę 360° z okolicy i postaw pinezkę tam, gdzie myślisz że została zrobiona. " +
+    "5 lokalizacji w rundzie — im celniej tym więcej punktów.",
   applicationName: "Panopin",
-  keywords: ["panopin", "geoguessr", "panorama 360", "gra geograficzna", "lokalna społeczność"],
+  keywords: ["panopin", "geoguessr", "panorama 360", "gra lokalna", "moja okolica", "zgadywanka"],
   authors: [{ name: "Panopin" }],
   openGraph: {
     type: "website",
     siteName: "Panopin",
-    title: "Panopin — gra w odgadywanie lokalizacji panoram 360°",
-    description: "Obejrzyj panoramę 360° i wskaż na mapie gdzie została zrobiona. 5 lokalizacji, im bliżej tym więcej punktów.",
+    title: "Panopin — sprawdź jak dobrze znasz swoją okolicę",
+    description: "Obejrzyj panoramę 360° z okolicy i postaw pinezkę tam, gdzie myślisz że została zrobiona. 5 lokalizacji w rundzie — im celniej tym więcej punktów.",
     locale: "pl_PL",
     url: SITE_URL,
     images: [
@@ -43,14 +43,14 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         type: "image/png",
-        alt: "Panopin — gra w odgadywanie lokalizacji panoram 360°",
+        alt: "Panopin — sprawdź jak dobrze znasz swoją okolicę",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Panopin",
-    description: "Otwartoźródłowa gra geo-zgadywanka z panoramami 360°.",
+    title: "Panopin — jak dobrze znasz swoją okolicę?",
+    description: "Obejrzyj panoramę 360° i postaw pinezkę tam, gdzie myślisz że została zrobiona.",
     images: [DEFAULT_OG_IMAGE],
   },
 };

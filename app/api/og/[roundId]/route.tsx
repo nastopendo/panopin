@@ -124,9 +124,9 @@ export async function GET(
               justifyContent: "center",
               width: 44,
               height: 44,
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              borderRadius: 11,
-              boxShadow: "0 0 28px rgba(245,158,11,0.5)",
+              background: "linear-gradient(135deg, #E8AA3C 0%, #B5811C 100%)",
+              borderRadius: 10,
+              boxShadow: "0 0 28px rgba(232,170,60,0.5)",
             }}
           >
             <svg
@@ -134,13 +134,13 @@ export async function GET(
               height="26"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
-              strokeWidth={2.2}
+              stroke="#2A1900"
+              strokeWidth={2.4}
               strokeLinecap="round"
               strokeLinejoin="round"
             >
               <path d="M3 13a9 9 0 0 1 18 0" />
-              <circle cx="12" cy="14.5" r="2.5" fill="white" stroke="none" />
+              <circle cx="12" cy="14.5" r="2.5" fill="#2A1900" stroke="none" />
             </svg>
           </div>
           <span style={{ fontSize: 26, fontWeight: 700, color: "white", letterSpacing: "-0.5px" }}>
@@ -318,14 +318,14 @@ export async function GET(
             style={{
               display: "flex",
               alignItems: "center",
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+              background: "linear-gradient(135deg, #E8AA3C 0%, #B5811C 100%)",
               borderRadius: 10,
               padding: "10px 24px",
-              boxShadow: "0 4px 20px rgba(245,158,11,0.4)",
+              boxShadow: "0 4px 20px rgba(232,170,60,0.4)",
             }}
           >
-            <span style={{ fontSize: 17, fontWeight: 700, color: "white" }}>
-              Zagraj teraz — to darmowe!
+            <span style={{ fontSize: 17, fontWeight: 700, color: "#2A1900" }}>
+              Sprawdź się →
             </span>
           </div>
         </div>
