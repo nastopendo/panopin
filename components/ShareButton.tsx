@@ -7,13 +7,17 @@ import { Button } from "@/components/ui/button";
 interface Props {
   url: string;
   score: number;
+  topPercent?: number | null;
 }
 
-export function ShareButton({ url, score }: Props) {
+export function ShareButton({ url, score, topPercent }: Props) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
-    const text = `Zdobyłem ${score.toLocaleString("pl-PL")} pkt w Panopin! Jak Ty?`;
+    const scoreStr = score.toLocaleString("pl-PL");
+    const text = topPercent !== null && topPercent !== undefined
+      ? `Jestem w top ${topPercent}% graczy Panopin! Zdobyłem ${scoreStr} pkt z 5 lokalizacji. Dasz radę pobić?`
+      : `Zdobyłem ${scoreStr} pkt w Panopin! Dasz radę pobić?`;
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {

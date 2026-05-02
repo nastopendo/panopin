@@ -2,7 +2,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { eq } from "drizzle-orm";
+import { and, count, eq, isNotNull, lt, ne } from "drizzle-orm";
 import { ArrowLeft, ArrowRight, Trophy } from "lucide-react";
 import { db } from "@/lib/db/client";
 import { guesses, profiles, rounds } from "@/lib/db/schema";
@@ -108,6 +108,23 @@ export default async function ResultsPage({
     displayName = profile?.displayName ?? null;
   }
 
+  let topPercent: number | null = null;
+  if (round.totalScore != null) {
+    const totalScore = round.totalScore;
+    const [{ beaten }] = await db
+      .select({ beaten: count() })
+      .from(rounds)
+      .where(and(isNotNull(rounds.totalScore), ne(rounds.id, roundId), lt(rounds.totalScore, totalScore)));
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(rounds)
+      .where(and(isNotNull(rounds.totalScore), ne(rounds.id, roundId)));
+    topPercent =
+      Number(total) > 0
+        ? Math.max(1, Math.ceil((1 - Number(beaten) / Number(total)) * 100))
+        : null;
+  }
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const shareUrl = `${siteUrl}/results/${roundId}`;
 
@@ -164,7 +181,7 @@ export default async function ResultsPage({
         </div>
 
         <div className="grid sm:grid-cols-2 gap-2 pt-2">
-          <ShareButton url={shareUrl} score={round.totalScore ?? 0} />
+          <ShareButton url={shareUrl} score={round.totalScore ?? 0} topPercent={topPercent} />
           <Button asChild variant="brand" size="lg">
             <Link href="/play">
               Zagraj sam
