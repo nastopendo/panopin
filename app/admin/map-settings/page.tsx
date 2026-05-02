@@ -40,7 +40,7 @@ interface Tag {
   color: string;
 }
 
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easy" | "medium" | "hard" | "extreme";
 
 interface PhotoMarker {
   id: string;
@@ -56,6 +56,14 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: "Łatwe",
   medium: "Średnie",
   hard: "Trudne",
+  extreme: "Ekstremalne",
+};
+
+const DIFFICULTY_MARKER_COLORS: Record<Difficulty, string> = {
+  easy: "#22c55e",
+  medium: "#eab308",
+  hard: "#ef4444",
+  extreme: "#a855f7",
 };
 
 interface PhotoEditDraft {
@@ -346,6 +354,14 @@ export default function MapSettingsPage() {
             <Stat label="Długość" value={draft.centerLng.toFixed(4)} />
             <Stat label="Zoom" value={draft.defaultZoom.toFixed(1)} />
           </dl>
+          <div className="flex flex-wrap gap-3 pt-1">
+            {(Object.entries(DIFFICULTY_MARKER_COLORS) as [keyof typeof DIFFICULTY_MARKER_COLORS, string][]).map(([d, color]) => (
+              <div key={d} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="size-3 rounded-full shrink-0" style={{ background: color }} />
+                {DIFFICULTY_LABELS[d]}
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -641,6 +657,15 @@ function AdminMap({
       coordsEl.textContent = `${photo.lat.toFixed(5)}, ${photo.lng.toFixed(5)}`;
       bodyEl.appendChild(coordsEl);
 
+      const difficultyEl = document.createElement("div");
+      const markerColor = DIFFICULTY_MARKER_COLORS[photo.difficulty];
+      difficultyEl.style.cssText =
+        `display: inline-block; margin-top: 6px; padding: 1px 8px; border-radius: 9999px; ` +
+        `font-size: 11px; font-weight: 600; ` +
+        `background: ${markerColor}22; color: ${markerColor}; border: 1px solid ${markerColor}55;`;
+      difficultyEl.textContent = DIFFICULTY_LABELS[photo.difficulty];
+      bodyEl.appendChild(difficultyEl);
+
       // Divider
       const dividerEl = document.createElement("div");
       dividerEl.style.cssText =
@@ -681,7 +706,7 @@ function AdminMap({
       bodyEl.appendChild(actionsEl);
       popupEl.appendChild(bodyEl);
 
-      const marker = new maplibregl.Marker({ color: "#e9a84c" })
+      const marker = new maplibregl.Marker({ color: DIFFICULTY_MARKER_COLORS[photo.difficulty] })
         .setLngLat([photo.lng, photo.lat])
         .setPopup(
           new maplibregl.Popup({ offset: 25, closeButton: true }).setDOMContent(
