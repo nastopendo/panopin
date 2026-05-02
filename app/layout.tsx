@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin", "latin-ext"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og/default`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -34,11 +35,23 @@ export const metadata: Metadata = {
     title: "Panopin — gra w odgadywanie lokalizacji panoram 360°",
     description: "Obejrzyj panoramę 360° i wskaż na mapie gdzie została zrobiona. 5 lokalizacji, im bliżej tym więcej punktów.",
     locale: "pl_PL",
+    url: SITE_URL,
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        secureUrl: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        type: "image/png",
+        alt: "Panopin — gra w odgadywanie lokalizacji panoram 360°",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Panopin",
     description: "Otwartoźródłowa gra geo-zgadywanka z panoramami 360°.",
+    images: [DEFAULT_OG_IMAGE],
   },
 };
 
