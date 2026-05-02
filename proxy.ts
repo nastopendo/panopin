@@ -1,7 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const SOCIAL_BOTS =
+  /facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|Slackbot|Discordbot|TelegramBot|vkShare|Pinterest/i;
+
 export async function proxy(request: NextRequest) {
+  // Let social media scrapers through without touching Supabase auth
+  if (SOCIAL_BOTS.test(request.headers.get("user-agent") ?? "")) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

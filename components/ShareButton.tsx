@@ -16,8 +16,8 @@ export function ShareButton({ url, score, topPercent }: Props) {
   async function handleShare() {
     const scoreStr = score.toLocaleString("pl-PL");
     const text = topPercent !== null && topPercent !== undefined
-      ? `Jestem w top ${topPercent}% graczy Panopin! Zdobyłem ${scoreStr} pkt z 5 lokalizacji. Dasz radę pobić?`
-      : `Zdobyłem ${scoreStr} pkt w Panopin! Dasz radę pobić?`;
+      ? `Jestem w top ${topPercent}% graczy Panopin! Zdobyłem ${scoreStr} pkt z 5 lokalizacji. A ile Ty zdobędziesz?`
+      : `Zdobyłem ${scoreStr} pkt w Panopin! A ile Ty zdobędziesz?`;
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {

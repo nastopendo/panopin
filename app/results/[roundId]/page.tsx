@@ -51,7 +51,7 @@ export async function generateMetadata({
       type: "website",
       url: pageUrl,
       title: `Panopin — ${score} pkt`,
-      description: `Zdobyłem ${score} pkt z 5 lokalizacji. Dasz radę pobić?`,
+      description: `Zdobyłem ${score} pkt z 5 lokalizacji. A ile Ty zdobędziesz?`,
       images: [
         {
           url: imageUrl,
@@ -66,7 +66,7 @@ export async function generateMetadata({
     twitter: {
       card: "summary_large_image",
       title: `Panopin — ${score} pkt`,
-      description: `Zdobyłem ${score} pkt z 5 lokalizacji. Dasz radę pobić?`,
+      description: `Zdobyłem ${score} pkt z 5 lokalizacji. A ile Ty zdobędziesz?`,
       images: [imageUrl],
     },
   };

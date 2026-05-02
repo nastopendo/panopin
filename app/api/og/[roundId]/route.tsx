@@ -229,7 +229,7 @@ export async function GET(
                 }}
               >
                 <span style={{ fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.58)" }}>
-                  Pobij mój wynik →
+                  A ile Ty zdobędziesz? →
                 </span>
               </div>
             </div>
