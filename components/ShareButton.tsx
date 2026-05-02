@@ -28,7 +28,7 @@ export function ShareButton({ url, score, topPercent }: Props) {
       }
     }
 
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${text}\n\n${url}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }

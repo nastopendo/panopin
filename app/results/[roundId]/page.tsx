@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { and, count, eq, isNotNull, lt, ne } from "drizzle-orm";
+import { headers } from "next/headers";
 import { ArrowLeft, ArrowRight, Trophy } from "lucide-react";
 import { db } from "@/lib/db/client";
 import { guesses, profiles, rounds } from "@/lib/db/schema";
@@ -17,6 +18,14 @@ const ShareButton = dynamic(
   () => import("@/components/ShareButton").then((m) => ({ default: m.ShareButton })),
 );
 
+async function resolveBaseUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  return host ? `${proto}://${host}` : "http://localhost:3000";
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -30,20 +39,34 @@ export async function generateMetadata({
     .limit(1);
 
   const score = round?.totalScore?.toLocaleString("pl-PL") ?? "—";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = await resolveBaseUrl();
+
+  const pageUrl = `${siteUrl}/results/${roundId}`;
   const imageUrl = `${siteUrl}/api/og/${roundId}`;
 
   return {
     title: `${score} pkt w Panopin`,
     description: `Sprawdź czy pobijesz mój wynik ${score} punktów z 5 lokalizacji.`,
     openGraph: {
+      type: "website",
+      url: pageUrl,
       title: `Panopin — ${score} pkt`,
-      description: `Zdobyłem ${score} pkt z 5 lokalizacji!`,
-      images: [{ url: imageUrl, width: 1200, height: 630 }],
+      description: `Zdobyłem ${score} pkt z 5 lokalizacji. Dasz radę pobić?`,
+      images: [
+        {
+          url: imageUrl,
+          secureUrl: imageUrl,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+          alt: `Wynik ${score} pkt w Panopin`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `Panopin — ${score} pkt`,
+      description: `Zdobyłem ${score} pkt z 5 lokalizacji. Dasz radę pobić?`,
       images: [imageUrl],
     },
   };
@@ -125,8 +148,7 @@ export default async function ResultsPage({
         : null;
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const shareUrl = `${siteUrl}/results/${roundId}`;
+  const shareUrl = `${await resolveBaseUrl()}/results/${roundId}`;
 
   return (
     <main className="bg-aurora min-h-dvh flex flex-col">
