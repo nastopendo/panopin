@@ -5,9 +5,13 @@ const SOCIAL_BOTS =
   /facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|Slackbot|Discordbot|TelegramBot|vkShare|Pinterest/i;
 
 export async function proxy(request: NextRequest) {
-  // Let social media scrapers through without touching Supabase auth
+  // Let social media scrapers through without Supabase auth, with no-cache to bypass stale CDN responses
   if (SOCIAL_BOTS.test(request.headers.get("user-agent") ?? "")) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "no-store, must-revalidate");
+    response.headers.set("CDN-Cache-Control", "no-store");
+    response.headers.set("Vercel-CDN-Cache-Control", "no-store");
+    return response;
   }
 
   let response = NextResponse.next({ request });
