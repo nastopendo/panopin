@@ -15,7 +15,7 @@ import { Logo } from "@/components/brand/Logo";
 import { UserNav } from "@/components/UserNav";
 import { Footer } from "@/components/Footer";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 async function loadStats() {
   try {

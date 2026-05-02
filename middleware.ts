@@ -6,7 +6,12 @@ const SOCIAL_BOTS =
 
 export async function middleware(request: NextRequest) {
   if (SOCIAL_BOTS.test(request.headers.get("user-agent") ?? "")) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    // Bypass any stale cached responses for social scrapers
+    response.headers.set("Cache-Control", "no-store, must-revalidate");
+    response.headers.set("CDN-Cache-Control", "no-store");
+    response.headers.set("Vercel-CDN-Cache-Control", "no-store");
+    return response;
   }
 
   let response = NextResponse.next({ request });
