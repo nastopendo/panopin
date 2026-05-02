@@ -67,7 +67,10 @@ export default function ResultsMap({ results, photos, onPhotoClick, mapStyle = "
       zoom: 5,
       interactive: true,
       attributionControl: false,
+      dragRotate: false,
+      pitchWithRotate: false,
     });
+    map.touchZoomRotate.disableRotation();
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
