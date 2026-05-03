@@ -25,6 +25,7 @@ export async function GET(
         heading: photos.heading,
         defaultYaw: photos.defaultYaw,
         tileManifest: photos.tileManifest,
+        difficulty: photos.difficulty,
       })
       .from(photos)
       .where(inArray(photos.id, round.photoIds)),
@@ -59,6 +60,7 @@ export async function GET(
       defaultYaw: p.defaultYaw,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tileLevels: (p.tileManifest as any)?.levels ?? [],
+      difficulty: p.difficulty,
       tags: tagsByPhotoId[pid] ?? [],
     };
   });

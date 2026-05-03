@@ -35,12 +35,29 @@ const ShareButton = dynamic(
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type Difficulty = "easy" | "medium" | "hard" | "extreme";
+
+const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  easy: "Łatwe",
+  medium: "Średnie",
+  hard: "Trudne",
+  extreme: "Ekstremalne",
+};
+
+const DIFFICULTY_COLORS: Record<Difficulty, string> = {
+  easy: "text-green-600 bg-green-950/80 border-green-700/50",
+  medium: "text-yellow-400 bg-yellow-950/80 border-yellow-700/50",
+  hard: "text-red-400 bg-red-950/80 border-red-700/50",
+  extreme: "text-purple-400 bg-purple-950/80 border-purple-700/50",
+};
+
 interface RoundPhoto {
   photoId: string;
   tileBaseUrl: string;
   heading: number;
   defaultYaw?: number | null;
   tileLevels: Array<{ faceSize: number; nbTiles: number }>;
+  difficulty: Difficulty;
   tags: { id: string; name: string; color: string }[];
 }
 
@@ -526,6 +543,14 @@ export default function RoundPage() {
             <span className="font-medium text-foreground">{step + 1}</span>
             <span>z {photos.length}</span>
           </div>
+          {currentPhoto?.difficulty && (
+            <div className={cn(
+              "absolute top-3 right-3 z-10 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border backdrop-blur",
+              DIFFICULTY_COLORS[currentPhoto.difficulty],
+            )}>
+              {DIFFICULTY_LABELS[currentPhoto.difficulty]}
+            </div>
+          )}
         </div>
 
         <div className="flex-[2] relative border-t md:border-t-0 md:border-l border-border min-h-[260px] md:min-h-0">
