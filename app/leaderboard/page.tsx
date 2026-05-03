@@ -26,9 +26,11 @@ function rankColor(rank: number) {
 }
 
 export default async function LeaderboardPage() {
-  const rows = await db
+  const rawRows = await db
     .select({
       id: rounds.id,
+      userId: rounds.userId,
+      anonSessionId: rounds.anonSessionId,
       totalScore: rounds.totalScore,
       completedAt: rounds.completedAt,
       displayName: profiles.displayName,
@@ -37,7 +39,17 @@ export default async function LeaderboardPage() {
     .leftJoin(profiles, eq(rounds.userId, profiles.id))
     .where(isNotNull(rounds.totalScore))
     .orderBy(desc(rounds.totalScore))
-    .limit(20);
+    .limit(500);
+
+  const seen = new Set<string>();
+  const rows: typeof rawRows = [];
+  for (const row of rawRows) {
+    const key = row.userId ?? row.anonSessionId ?? row.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(row);
+    if (rows.length >= 20) break;
+  }
 
   const podium = rows.slice(0, 3);
   const rest = rows.slice(3);
