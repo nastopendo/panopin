@@ -33,6 +33,7 @@ function getInitials(name: string): string {
 export function UserNav() {
   const [name, setName] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -58,6 +59,7 @@ export function UserNav() {
           setName(user.user_metadata?.full_name ?? user.email ?? "Gracz");
         }
       }
+      setLoaded(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -97,6 +99,10 @@ export function UserNav() {
     router.refresh();
     setName(null);
     setEmail(null);
+  }
+
+  if (!loaded) {
+    return <div className="size-9" aria-hidden />;
   }
 
   if (!name) {
