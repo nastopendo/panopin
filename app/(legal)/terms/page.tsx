@@ -29,9 +29,16 @@ export default function TermsPage() {
       <h2>3. Konto użytkownika</h2>
       <p>
         Gra jest dostępna bez rejestracji — Serwis automatycznie tworzy anonimową sesję. Opcjonalnie
-        można zalogować się kontem Google, co umożliwia ustawienie nazwy wyświetlanej i pojawienie
-        się w rankingu. Logowanie kontem Google łączy anonimową sesję z kontem — dotychczasowe wyniki
-        zostają zachowane.
+        można zalogować się kontem Google lub linkiem e-mail, co umożliwia ustawienie nazwy
+        wyświetlanej i pojawienie się w rankingu. Logowanie łączy anonimową sesję z kontem —
+        dotychczasowe wyniki zostają zachowane.
+      </p>
+      <p>
+        Adres e-mail użytkownika nie jest publicznie widoczny w Serwisie. Administrator może
+        kontaktować się z użytkownikami mailowo wyłącznie w sprawach związanych z działaniem
+        Serwisu, w tym w celu wręczenia ewentualnych upominków lub nagród przewidzianych w
+        konkursach lub akcjach promocyjnych. Serwis nie wysyła wiadomości marketingowych ani
+        newslettera.
       </p>
       <p>
         Użytkownik może w dowolnym momencie usunąć swoje konto i powiązane dane, wysyłając prośbę

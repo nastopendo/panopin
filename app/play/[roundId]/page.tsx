@@ -9,6 +9,8 @@ import {
   ArrowRight,
   Clock,
   Loader2,
+  LogIn,
+  Save,
   Target,
   Trophy,
   Users,
@@ -25,11 +27,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 
-const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), { ssr: false });
-const GuessMap = dynamic(() => import("@/components/map/GuessMap"), { ssr: false });
-const ResultsMap = dynamic(() => import("@/components/map/ResultsMap"), { ssr: false });
+const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), {
+  ssr: false,
+});
+const GuessMap = dynamic(() => import("@/components/map/GuessMap"), {
+  ssr: false,
+});
+const ResultsMap = dynamic(() => import("@/components/map/ResultsMap"), {
+  ssr: false,
+});
 const ShareButton = dynamic(
-  () => import("@/components/ShareButton").then((m) => ({ default: m.ShareButton })),
+  () =>
+    import("@/components/ShareButton").then((m) => ({
+      default: m.ShareButton,
+    })),
   { ssr: false },
 );
 
@@ -128,7 +139,8 @@ export default function RoundPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const [photos, setPhotos] = useState<RoundPhoto[]>([]);
-  const [mapSettings, setMapSettings] = useState<MapSettings>(DEFAULT_MAP_SETTINGS);
+  const [mapSettings, setMapSettings] =
+    useState<MapSettings>(DEFAULT_MAP_SETTINGS);
   const [step, setStep] = useState(0);
   const [results, setResults] = useState<StepResult[]>([]);
   const [currentResult, setCurrentResult] = useState<StepResult | null>(null);
@@ -137,22 +149,37 @@ export default function RoundPage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState<number | null>(null);
 
-  const [tournamentPlayers, setTournamentPlayers] = useState<TournamentPlayerScore[]>([]);
+  const [tournamentPlayers, setTournamentPlayers] = useState<
+    TournamentPlayerScore[]
+  >([]);
   const [timeLimitS, setTimeLimitS] = useState(30);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAnonymous(user?.is_anonymous === true);
+    });
+  }, []);
 
   const stepStartRef = useRef<number>(0);
   const pendingPinRef = useRef<{ lat: number; lng: number } | null>(null);
-  const handleGuessRef = useRef<((guess: { lat: number; lng: number }) => Promise<void>) | null>(null);
+  const handleGuessRef = useRef<
+    ((guess: { lat: number; lng: number }) => Promise<void>) | null
+  >(null);
 
   // Load tournament state + subscribe to live score updates
   useEffect(() => {
     if (!tournamentCode) return;
-    let channel: ReturnType<ReturnType<typeof createSupabaseBrowserClient>["channel"]> | null =
-      null;
+    let channel: ReturnType<
+      ReturnType<typeof createSupabaseBrowserClient>["channel"]
+    > | null = null;
 
     async function initTournament() {
-      const res = await fetch(`/api/tournaments/${tournamentCode}`).catch(() => null);
+      const res = await fetch(`/api/tournaments/${tournamentCode}`).catch(
+        () => null,
+      );
       if (!res?.ok) return;
       const data = await res.json().catch(() => null);
       if (!data) return;
@@ -169,7 +196,9 @@ export default function RoundPage() {
             filter: `tournament_id=eq.${data.id}`,
           },
           async () => {
-            const r = await fetch(`/api/tournaments/${tournamentCode}`).catch(() => null);
+            const r = await fetch(`/api/tournaments/${tournamentCode}`).catch(
+              () => null,
+            );
             if (!r?.ok) return;
             const d = await r.json().catch(() => null);
             if (d) setTournamentPlayers(d.players ?? []);
@@ -197,7 +226,8 @@ export default function RoundPage() {
         setMapSettings({
           centerLat: settingsData.centerLat ?? DEFAULT_MAP_SETTINGS.centerLat,
           centerLng: settingsData.centerLng ?? DEFAULT_MAP_SETTINGS.centerLng,
-          defaultZoom: settingsData.defaultZoom ?? DEFAULT_MAP_SETTINGS.defaultZoom,
+          defaultZoom:
+            settingsData.defaultZoom ?? DEFAULT_MAP_SETTINGS.defaultZoom,
           mapStyle: settingsData.mapStyle ?? DEFAULT_MAP_SETTINGS.mapStyle,
         });
         const limit = scoringData.timeLimitS ?? 30;
@@ -290,7 +320,9 @@ export default function RoundPage() {
   async function handleNext() {
     if (step + 1 >= photos.length) {
       try {
-        const res = await fetch(`/api/rounds/${roundId}/finish`, { method: "POST" });
+        const res = await fetch(`/api/rounds/${roundId}/finish`, {
+          method: "POST",
+        });
         const data = await res.json();
         if (tournamentCode) {
           router.push(`/tournament/${tournamentCode}`);
@@ -304,7 +336,8 @@ export default function RoundPage() {
           return;
         }
         const localTotal =
-          results.reduce((s, r) => s + r.score, 0) + (currentResult?.score ?? 0);
+          results.reduce((s, r) => s + r.score, 0) +
+          (currentResult?.score ?? 0);
         setTotalScore(localTotal);
       }
       setPhase("finished");
@@ -401,7 +434,9 @@ export default function RoundPage() {
             <div className="mt-4 text-6xl sm:text-7xl font-bold tabular-nums tracking-tight">
               {totalScore?.toLocaleString("pl-PL")}
             </div>
-            <p className="mt-1 text-muted-foreground text-sm">punktów łącznie</p>
+            <p className="mt-1 text-muted-foreground text-sm">
+              punktów łącznie
+            </p>
             {topPercent !== null && (
               <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-medium text-success ring-1 ring-success/30">
                 <Trophy className="size-3" />
@@ -409,6 +444,34 @@ export default function RoundPage() {
               </div>
             )}
           </Card>
+
+          {isAnonymous && !tournamentCode && (
+            <Card className="p-5 bg-gradient-to-br from-brand/10 to-card/60 backdrop-blur-md ring-1 ring-brand/30">
+              <div className="flex items-start gap-3">
+                <div className="size-10 rounded-full bg-brand/15 ring-1 ring-brand/30 flex items-center justify-center shrink-0">
+                  <Save className="size-5 text-brand" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-2.5">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold leading-tight">
+                      Zapisz ten wynik na swoim koncie
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Grasz jako gość. Zaloguj się, aby ten wynik został
+                      przypisany do Twojego konta i pojawił się w rankingu -
+                      dotychczasowe rundy zostaną zachowane.
+                    </p>
+                  </div>
+                  <Button asChild variant="brand" size="sm">
+                    <Link href={`/login?redirect=/results/${roundId}`}>
+                      <LogIn />
+                      Zaloguj się i zachowaj wynik
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <Card className="p-2 overflow-hidden h-[360px] bg-card/60">
             <ResultsMap
@@ -423,15 +486,17 @@ export default function RoundPage() {
             </p>
           </Card>
 
-          {selectedPhotoIdx !== null && results[selectedPhotoIdx] && photos[selectedPhotoIdx] && (
-            <PhotoModal
-              photo={photos[selectedPhotoIdx]}
-              result={results[selectedPhotoIdx]}
-              stepNumber={selectedPhotoIdx + 1}
-              totalSteps={photos.length}
-              onClose={() => setSelectedPhotoIdx(null)}
-            />
-          )}
+          {selectedPhotoIdx !== null &&
+            results[selectedPhotoIdx] &&
+            photos[selectedPhotoIdx] && (
+              <PhotoModal
+                photo={photos[selectedPhotoIdx]}
+                result={results[selectedPhotoIdx]}
+                stepNumber={selectedPhotoIdx + 1}
+                totalSteps={photos.length}
+                onClose={() => setSelectedPhotoIdx(null)}
+              />
+            )}
 
           <div className="space-y-2">
             {results.map((r, i) => (
@@ -451,7 +516,12 @@ export default function RoundPage() {
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className={cn("font-semibold tabular-nums", scoreColor(r.score))}>
+                  <span
+                    className={cn(
+                      "font-semibold tabular-nums",
+                      scoreColor(r.score),
+                    )}
+                  >
                     {r.score.toLocaleString("pl-PL")}
                   </span>
                   {r.timeBonus > 0 && (
@@ -493,23 +563,34 @@ export default function RoundPage() {
         <div className="px-3 sm:px-4 py-2.5 bg-background/95 backdrop-blur-md flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Logo size="sm" showWordmark={false} />
-            <StepDots total={photos.length} current={step} done={results.length} />
+            <StepDots
+              total={photos.length}
+              current={step}
+              done={results.length}
+            />
           </div>
           <div className="flex items-center gap-3 text-sm">
             {tournamentCode && tournamentPlayers.length > 0 && (
               <TournamentScoreRibbon players={tournamentPlayers} />
             )}
             {phase === "playing" && timeLimitS > 0 && (
-              <div className={cn(
-                "flex items-center gap-1 tabular-nums font-semibold",
-                timeLeft > timeLimitS * 0.5 ? "text-success" :
-                timeLeft > timeLimitS * 0.2 ? "text-warning" : "text-destructive",
-              )}>
+              <div
+                className={cn(
+                  "flex items-center gap-1 tabular-nums font-semibold",
+                  timeLeft > timeLimitS * 0.5
+                    ? "text-success"
+                    : timeLeft > timeLimitS * 0.2
+                      ? "text-warning"
+                      : "text-destructive",
+                )}
+              >
                 <Clock className="size-3.5" />
                 {timeLeft}s
               </div>
             )}
-            <span className="text-muted-foreground hidden sm:inline">Wynik</span>
+            <span className="text-muted-foreground hidden sm:inline">
+              Wynik
+            </span>
             <span className="font-semibold tabular-nums">
               {runningScore.toLocaleString("pl-PL")}
             </span>
@@ -520,14 +601,19 @@ export default function RoundPage() {
             <div
               className={cn(
                 "h-full transition-all duration-1000 ease-linear",
-                timeLeft > timeLimitS * 0.5 ? "bg-success" :
-                timeLeft > timeLimitS * 0.2 ? "bg-warning" : "bg-destructive",
+                timeLeft > timeLimitS * 0.5
+                  ? "bg-success"
+                  : timeLeft > timeLimitS * 0.2
+                    ? "bg-warning"
+                    : "bg-destructive",
               )}
               style={{ width: `${(timeLeft / timeLimitS) * 100}%` }}
             />
           </div>
         )}
-        {(phase !== "playing" || timeLimitS === 0) && <div className="border-b border-border" />}
+        {(phase !== "playing" || timeLimitS === 0) && (
+          <div className="border-b border-border" />
+        )}
       </div>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
@@ -544,10 +630,12 @@ export default function RoundPage() {
             <span>z {photos.length}</span>
           </div>
           {currentPhoto?.difficulty && (
-            <div className={cn(
-              "absolute top-3 right-3 z-10 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border backdrop-blur",
-              DIFFICULTY_COLORS[currentPhoto.difficulty],
-            )}>
+            <div
+              className={cn(
+                "absolute top-3 right-3 z-10 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border backdrop-blur",
+                DIFFICULTY_COLORS[currentPhoto.difficulty],
+              )}
+            >
               {DIFFICULTY_LABELS[currentPhoto.difficulty]}
             </div>
           )}
@@ -567,7 +655,9 @@ export default function RoundPage() {
             initialZoom={mapSettings.defaultZoom}
             mapStyle={mapSettings.mapStyle}
             className="w-full h-full"
-            onPinChange={(pin) => { pendingPinRef.current = pin; }}
+            onPinChange={(pin) => {
+              pendingPinRef.current = pin;
+            }}
           />
 
           {submitting && (
@@ -582,7 +672,9 @@ export default function RoundPage() {
           {phase === "revealed" && currentResult && (
             <div
               className="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none z-20 px-3"
-              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+              style={{
+                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+              }}
             >
               <ResultOverlay
                 result={currentResult}
@@ -611,7 +703,10 @@ function StepDots({
   done: number;
 }) {
   return (
-    <div className="flex items-center gap-1.5" aria-label={`Krok ${current + 1} z ${total}`}>
+    <div
+      className="flex items-center gap-1.5"
+      aria-label={`Krok ${current + 1} z ${total}`}
+    >
       {Array.from({ length: total }, (_, i) => (
         <span
           key={i}
@@ -688,13 +783,18 @@ function PhotoModal({
             {stepNumber}
           </div>
           <div className="flex-1 min-w-0">
-            <p className={cn("font-semibold text-sm", scoreColor(result.score))}>
-              {scoreLabel(result.score)} · {result.score.toLocaleString("pl-PL")} pkt
+            <p
+              className={cn("font-semibold text-sm", scoreColor(result.score))}
+            >
+              {scoreLabel(result.score)} ·{" "}
+              {result.score.toLocaleString("pl-PL")} pkt
             </p>
             <p className="text-xs text-white/50">
               {formatDistance(result.distanceM)} od celu
               {result.timeBonus > 0 && (
-                <span className="text-success ml-1.5">+{result.timeBonus} bonus czasowy</span>
+                <span className="text-success ml-1.5">
+                  +{result.timeBonus} bonus czasowy
+                </span>
               )}
             </p>
           </div>
@@ -709,7 +809,9 @@ function TournamentScoreRibbon({
 }: {
   players: TournamentPlayerScore[];
 }) {
-  const sorted = [...players].sort((a, b) => b.currentScore - a.currentScore).slice(0, 3);
+  const sorted = [...players]
+    .sort((a, b) => b.currentScore - a.currentScore)
+    .slice(0, 3);
   return (
     <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
       <Users className="size-3 shrink-0" />
@@ -719,7 +821,9 @@ function TournamentScoreRibbon({
           <span className="font-medium text-foreground/70 truncate max-w-[60px]">
             {p.displayName.split(" ")[0]}
           </span>
-          <span className="tabular-nums">{p.currentScore.toLocaleString("pl-PL")}</span>
+          <span className="tabular-nums">
+            {p.currentScore.toLocaleString("pl-PL")}
+          </span>
         </span>
       ))}
     </div>
@@ -755,7 +859,12 @@ function ResultOverlay({
               {scoreLabel(result.score)}
             </p>
             <div className="flex items-baseline gap-1.5">
-              <span className={cn("text-2xl font-bold tabular-nums", scoreColor(result.score))}>
+              <span
+                className={cn(
+                  "text-2xl font-bold tabular-nums",
+                  scoreColor(result.score),
+                )}
+              >
                 {result.score.toLocaleString("pl-PL")}
               </span>
               <span className="text-xs text-muted-foreground">pkt</span>
@@ -768,7 +877,9 @@ function ResultOverlay({
             <div className="flex items-center justify-end gap-1 mt-0.5">
               <span>Bazowe {result.baseScore.toLocaleString("pl-PL")}</span>
               {result.timeBonus > 0 && (
-                <span className="text-success">+{result.timeBonus} pkt bonus</span>
+                <span className="text-success">
+                  +{result.timeBonus} pkt bonus
+                </span>
               )}
             </div>
           </div>
@@ -792,7 +903,12 @@ function ResultOverlay({
           </div>
         )}
 
-        <Button onClick={onNext} variant="brand" size="default" className="w-full h-10">
+        <Button
+          onClick={onNext}
+          variant="brand"
+          size="default"
+          className="w-full h-10"
+        >
           {isLast ? (
             <>
               <Trophy />

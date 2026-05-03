@@ -35,8 +35,10 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Adres e-mail</strong> — wyłącznie w przypadku logowania przez
-          Google. Używany do identyfikacji konta; nie jest udostępniany
-          publicznie.
+          Google lub link e-mail. Używany do identyfikacji konta i nie jest
+          udostępniany publicznie ani innym użytkownikom. Administrator może
+          skontaktować się z użytkownikiem mailowo wyłącznie w celu wręczenia
+          ewentualnych upominków lub nagród związanych z grą.
         </li>
         <li>
           <strong>Nazwa wyświetlana</strong> — opcjonalna, ustawiana przez
@@ -59,7 +61,9 @@ export default function PrivacyPage() {
         Dane przetwarzane są na podstawie art. 6 ust. 1 lit. b RODO (niezbędność
         do wykonania umowy/usługi) — umożliwienie korzystania z gry,
         przechowywanie wyników i prowadzenie rankingu. Nie przetwarzamy danych w
-        celach marketingowych.
+        celach marketingowych ani nie wysyłamy newslettera. Adres e-mail może
+        zostać użyty wyłącznie do kontaktu w sprawie ewentualnych upominków lub
+        nagród związanych z rozgrywką.
       </p>
 
       <h2>4. Czas przechowywania danych</h2>
