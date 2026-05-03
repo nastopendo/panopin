@@ -11,6 +11,7 @@ import {
   Copy,
   Crown,
   Loader2,
+  Medal,
   Trophy,
   Users,
   X,
@@ -802,14 +803,6 @@ function LiveLeaderboard({
   );
 }
 
-const PLACE_STYLES = [
-  "bg-amber-400/20 text-amber-500 ring-1 ring-amber-400/40",
-  "bg-slate-300/20 text-slate-400 ring-1 ring-slate-300/40",
-  "bg-orange-400/20 text-orange-500 ring-1 ring-orange-400/40",
-];
-
-const PLACE_ICONS = ["🥇", "🥈", "🥉"];
-
 function Podium({
   players,
   currentUserId,
@@ -818,31 +811,59 @@ function Podium({
   currentUserId: string | null;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {players.map((p, i) => (
-        <Card
-          key={p.id}
-          className={cn(
-            "bg-card/60 backdrop-blur-md p-3 text-center flex flex-col items-center gap-1.5",
-            i === 0 && "col-span-3 sm:col-span-1 sm:order-2",
-            p.userId === currentUserId && "ring-1 ring-brand/40",
-          )}
-        >
-          <div className="text-xl">{PLACE_ICONS[i]}</div>
+    <div className="grid sm:grid-cols-3 gap-3">
+      {players.map((p, i) => {
+        const rank = i + 1;
+        const Icon = rank === 1 ? Crown : Medal;
+        return (
           <div
+            key={p.id}
             className={cn(
-              "size-10 rounded-full flex items-center justify-center text-sm font-bold",
-              PLACE_STYLES[i] ?? "bg-secondary",
+              "rounded-2xl border p-4 backdrop-blur-md flex flex-col items-center text-center gap-2",
+              rank === 1
+                ? "bg-warning/10 border-warning/30 sm:order-2 sm:scale-105"
+                : rank === 2
+                  ? "bg-card/60 border-border sm:order-1"
+                  : "bg-brand/10 border-brand/25 sm:order-3",
+              p.userId === currentUserId && "ring-1 ring-brand/40",
             )}
           >
-            {getInitials(p.displayName)}
+            <div
+              className={cn(
+                "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider",
+                rank === 1
+                  ? "text-warning"
+                  : rank === 2
+                    ? "text-muted-foreground"
+                    : "text-brand",
+              )}
+            >
+              <Icon className="size-3.5" />#{rank}
+            </div>
+            <div
+              className={cn(
+                "size-12 rounded-full flex items-center justify-center text-sm font-bold",
+                rank === 1
+                  ? "bg-warning/20 text-warning ring-1 ring-warning/40"
+                  : rank === 2
+                    ? "bg-secondary text-muted-foreground"
+                    : "bg-brand/20 text-brand ring-1 ring-brand/30",
+              )}
+            >
+              {getInitials(p.displayName)}
+            </div>
+            <p className="text-sm font-medium truncate max-w-full">
+              {p.displayName}
+              {p.userId === currentUserId && (
+                <span className="text-xs text-muted-foreground ml-1">(ty)</span>
+              )}
+            </p>
+            <p className="text-xl font-bold tabular-nums">
+              {p.currentScore.toLocaleString("pl-PL")}
+            </p>
           </div>
-          <p className="text-xs font-medium truncate w-full">{p.displayName}</p>
-          <p className="text-base font-bold tabular-nums">
-            {p.currentScore.toLocaleString("pl-PL")}
-          </p>
-        </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }
