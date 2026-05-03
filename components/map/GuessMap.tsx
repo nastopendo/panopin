@@ -47,7 +47,9 @@ export default function GuessMap({
   const onPinChangeRef = useRef(onPinChange);
   const initialCenterRef = useRef(initialCenter);
   const initialZoomRef = useRef(initialZoom);
+  const isProgrammaticMoveRef = useRef(false);
   const [pin, setPin] = useState<GuessResult | null>(null);
+  const [hasMoved, setHasMoved] = useState(false);
 
   useEffect(() => {
     onPinChangeRef.current = onPinChange;
@@ -97,6 +99,14 @@ export default function GuessMap({
       }
     });
 
+    map.on("moveend", () => {
+      if (isProgrammaticMoveRef.current) {
+        isProgrammaticMoveRef.current = false;
+        return;
+      }
+      setHasMoved(true);
+    });
+
     map.on("click", (e) => {
       if (disabledRef.current) return;
       const { lat, lng } = e.lngLat;
@@ -136,12 +146,14 @@ export default function GuessMap({
     if (map.getLayer("guess-line")) map.removeLayer("guess-line");
     if (map.getSource("guess-line")) map.removeSource("guess-line");
 
+    isProgrammaticMoveRef.current = true;
     map.flyTo({
       center: initialCenterRef.current,
       zoom: initialZoomRef.current,
       duration: 600,
     });
 
+    setHasMoved(false);
     setPin(null);
     onPinChangeRef.current?.(null);
   }, [stepKey]);
@@ -201,9 +213,34 @@ export default function GuessMap({
     }
   }, [actualLocation]);
 
+  function handleResetView() {
+    const map = mapRef.current;
+    if (!map) return;
+    isProgrammaticMoveRef.current = true;
+    map.flyTo({
+      center: initialCenterRef.current,
+      zoom: initialZoomRef.current,
+      duration: 600,
+    });
+    setHasMoved(false);
+  }
+
   return (
     <div className={`relative ${className ?? "w-full h-full"}`}>
       <div ref={containerRef} className="w-full h-full" />
+
+      {hasMoved && !disabled && (
+        <button
+          onClick={handleResetView}
+          className="absolute top-2.5 left-2.5 z-10 bg-white/90 backdrop-blur-sm text-gray-600 flex items-center gap-1.5 px-2.5 py-1.5 rounded shadow hover:bg-white hover:text-gray-900 transition-colors text-xs font-medium"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9,22 9,12 15,12 15,22" />
+          </svg>
+          Widok startowy
+        </button>
+      )}
 
       {pin && !disabled && (
         <div
