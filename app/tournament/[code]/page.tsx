@@ -12,6 +12,7 @@ import {
   Crown,
   Loader2,
   Medal,
+  RotateCw,
   Trophy,
   Users,
   X,
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 import type { TournamentStatus } from "@/lib/db/schema";
@@ -55,8 +57,21 @@ interface TournamentState {
   filterTagIds: string[] | null;
   startedAt: string | null;
   finishedAt: string | null;
+  nextTournamentCode: string | null;
   players: TournamentPlayer[];
 }
+
+type Difficulty = "easy" | "medium" | "hard" | "extreme";
+
+const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
+  { value: "easy", label: "Łatwe" },
+  { value: "medium", label: "Średnie" },
+  { value: "hard", label: "Trudne" },
+  { value: "extreme", label: "Ekstremalne" },
+];
+
+const DEFAULT_REMATCH_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
+const REMATCH_REDIRECT_SECONDS = 5;
 
 interface GuessResult {
   sequence: number;
@@ -96,6 +111,11 @@ function sortedByScore(players: TournamentPlayer[]): TournamentPlayer[] {
   return [...players].sort((a, b) => b.currentScore - a.currentScore);
 }
 
+function getDefaultRematchDifficulties(tournament: TournamentState | null): Difficulty[] {
+  const previous = tournament?.filterDifficulties as Difficulty[] | null | undefined;
+  return previous && previous.length > 0 ? previous : DEFAULT_REMATCH_DIFFICULTIES;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TournamentPage() {
@@ -121,6 +141,19 @@ export default function TournamentPage() {
   const [joinName, setJoinName] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+
+  // Rematch state (host-only, on finished screen)
+  const [selectedRematchDifficulties, setSelectedRematchDifficulties] = useState<Difficulty[] | null>(
+    null,
+  );
+  const [creatingRematch, setCreatingRematch] = useState(false);
+  const [rematchError, setRematchError] = useState<string | null>(null);
+
+  // Auto-redirect when host creates a rematch — banner countdown
+  const [redirectCancelled, setRedirectCancelled] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState<{ code: string; value: number } | null>(
+    null,
+  );
   const channelRef = useRef<ReturnType<
     ReturnType<typeof createSupabaseBrowserClient>["channel"]
   > | null>(null);
@@ -133,6 +166,9 @@ export default function TournamentPage() {
     if (t.status === "playing") return "playing";
     return "lobby";
   }
+
+  const rematchDifficulties =
+    selectedRematchDifficulties ?? getDefaultRematchDifficulties(tournament);
 
   async function refetch() {
     try {
@@ -179,9 +215,7 @@ export default function TournamentPage() {
         setPhase("error");
       }
     }
-
     init();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   // ─── Load map data when tournament finishes ──────────────────────────────
@@ -258,7 +292,52 @@ export default function TournamentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournament?.id]);
 
+  // ─── Auto-redirect to rematch tournament ─────────────────────────────────
+
+  useEffect(() => {
+    const next = tournament?.nextTournamentCode;
+    if (!next || redirectCancelled) return;
+
+    const timer = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        const current = prev?.code === next ? prev.value : REMATCH_REDIRECT_SECONDS;
+        if (current <= 1) {
+          clearInterval(timer);
+          router.push(`/tournament/${next}`);
+          return { code: next, value: 0 };
+        }
+        return { code: next, value: current - 1 };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [tournament?.nextTournamentCode, redirectCancelled, router]);
+
   // ─── Actions ─────────────────────────────────────────────────────────────
+
+  async function handleCreateRematch() {
+    if (creatingRematch) return;
+    if (rematchDifficulties.length === 0) {
+      setRematchError("Wybierz co najmniej jedną trudność");
+      return;
+    }
+    setCreatingRematch(true);
+    setRematchError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${code}/rematch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filterDifficulties: rematchDifficulties }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      // Realtime update on tournaments will set nextTournamentCode → banner appears for everyone
+    } catch (e) {
+      setRematchError(e instanceof Error ? e.message : "Nie udało się utworzyć rewanżu");
+    } finally {
+      setCreatingRematch(false);
+    }
+  }
 
   async function handleStart() {
     if (starting) return;
@@ -629,8 +708,28 @@ export default function TournamentPage() {
 
   // ─── Finished ─────────────────────────────────────────────────────────────
 
+  const nextCode = tournament.nextTournamentCode;
+  const visibleRedirectCountdown =
+    nextCode && !redirectCancelled
+      ? redirectCountdown?.code === nextCode
+        ? redirectCountdown.value
+        : REMATCH_REDIRECT_SECONDS
+      : null;
+
   return (
     <div className="min-h-dvh bg-aurora overflow-y-auto">
+      {nextCode && (
+        <RematchBanner
+          code={nextCode}
+          countdown={visibleRedirectCountdown}
+          onGoNow={() => router.push(`/tournament/${nextCode}`)}
+          onCancel={() => {
+            setRedirectCancelled(true);
+            setRedirectCountdown(null);
+          }}
+        />
+      )}
+
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
         <Logo size="md" />
         <Button asChild variant="ghost" size="sm">
@@ -733,6 +832,61 @@ export default function TournamentPage() {
           </ul>
         </Card>
 
+        {isHost && !nextCode && (
+          <Card className="bg-card/60 backdrop-blur-md p-5 flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <RotateCw className="size-4 text-brand" />
+              <h3 className="text-sm font-semibold">Zagraj ponownie z tymi samymi graczami</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Stworzymy nowy turniej, wszyscy gracze zostaną automatycznie przeniesieni — bez konieczności wysyłania nowego linku.
+            </p>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
+                Trudność
+              </p>
+              <ToggleGroup
+                type="multiple"
+                value={rematchDifficulties}
+                onValueChange={(v) =>
+                  v.length > 0 && setSelectedRematchDifficulties(v as Difficulty[])
+                }
+                className="w-full"
+              >
+                {DIFFICULTY_OPTIONS.map((opt) => (
+                  <ToggleGroupItem
+                    key={opt.value}
+                    value={opt.value}
+                    aria-label={opt.label}
+                    className="flex-1"
+                  >
+                    {opt.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            {rematchError && (
+              <p className="text-xs text-destructive">{rematchError}</p>
+            )}
+
+            <Button
+              onClick={handleCreateRematch}
+              disabled={creatingRematch || rematchDifficulties.length === 0}
+              variant="brand"
+              size="lg"
+              className="w-full"
+            >
+              {creatingRematch ? (
+                <><Loader2 className="animate-spin" />Tworzę rewanż…</>
+              ) : (
+                <><RotateCw />Stwórz rewanż</>
+              )}
+            </Button>
+          </Card>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <Button asChild variant="brand" size="lg">
             <Link href="/tournament">Nowy turniej</Link>
@@ -742,6 +896,54 @@ export default function TournamentPage() {
           </Button>
         </div>
       </main>
+    </div>
+  );
+}
+
+function RematchBanner({
+  code,
+  countdown,
+  onGoNow,
+  onCancel,
+}: {
+  code: string;
+  countdown: number | null;
+  onGoNow: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="sticky top-0 z-40 bg-brand/95 text-brand-foreground backdrop-blur border-b border-brand/40 shadow-lg">
+      <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+        <RotateCw className="size-4 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold leading-tight">
+            Host rozpoczął rewanż — turniej {code}
+          </p>
+          <p className="text-xs opacity-80 leading-tight">
+            {countdown !== null
+              ? `Przekierowanie za ${countdown} s…`
+              : "Możesz dołączyć w każdej chwili."}
+          </p>
+        </div>
+        {countdown !== null && (
+          <Button
+            onClick={onCancel}
+            variant="ghost"
+            size="sm"
+            className="text-brand-foreground hover:bg-white/15 hover:text-brand-foreground"
+          >
+            Anuluj
+          </Button>
+        )}
+        <Button
+          onClick={onGoNow}
+          variant="secondary"
+          size="sm"
+          className="shrink-0"
+        >
+          Przejdź teraz
+        </Button>
+      </div>
     </div>
   );
 }

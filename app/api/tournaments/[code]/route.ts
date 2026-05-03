@@ -48,6 +48,7 @@ export async function GET(
     filterTagIds: tournament.filterTagIds,
     startedAt: tournament.startedAt,
     finishedAt: tournament.finishedAt,
+    nextTournamentCode: tournament.nextTournamentCode,
     createdAt: tournament.createdAt,
     players,
   });

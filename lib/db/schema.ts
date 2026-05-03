@@ -139,6 +139,7 @@ export const tournaments = pgTable("tournaments", {
   filterDifficulties: jsonb("filter_difficulties").$type<string[]>(),
   startedAt: timestamptz("started_at"),
   finishedAt: timestamptz("finished_at"),
+  nextTournamentCode: text("next_tournament_code"),
   createdAt: timestamptz("created_at").defaultNow().notNull(),
 });
 
