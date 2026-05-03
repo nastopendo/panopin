@@ -44,7 +44,7 @@ export async function GET(
     code: tournament.code,
     status: tournament.status,
     hostId: tournament.hostId,
-    filterDifficulty: tournament.filterDifficulty,
+    filterDifficulties: tournament.filterDifficulties,
     filterTagIds: tournament.filterTagIds,
     startedAt: tournament.startedAt,
     finishedAt: tournament.finishedAt,

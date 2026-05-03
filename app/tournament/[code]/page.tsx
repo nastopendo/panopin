@@ -50,7 +50,7 @@ interface TournamentState {
   code: string;
   status: TournamentStatus;
   hostId: string;
-  filterDifficulty: string | null;
+  filterDifficulties: string[] | null;
   filterTagIds: string[] | null;
   startedAt: string | null;
   finishedAt: string | null;
@@ -80,11 +80,15 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function difficultyLabel(d: string | null): string {
-  if (d === "easy") return "Łatwe";
-  if (d === "medium") return "Średnie";
-  if (d === "hard") return "Trudne";
-  return "Wszystkie";
+const DIFFICULTY_LABELS: Record<string, string> = {
+  easy: "Łatwe",
+  medium: "Średnie",
+  hard: "Trudne",
+  extreme: "Ekstremalne",
+};
+
+function difficultyLabel(d: string): string {
+  return DIFFICULTY_LABELS[d] ?? d;
 }
 
 function sortedByScore(players: TournamentPlayer[]): TournamentPlayer[] {
@@ -468,11 +472,13 @@ export default function TournamentPage() {
                 Podaj kod lub wyślij link znajomym
               </p>
 
-              {(tournament.filterDifficulty || (tournament.filterTagIds?.length ?? 0) > 0) && (
+              {((tournament.filterDifficulties?.length ?? 0) > 0 || (tournament.filterTagIds?.length ?? 0) > 0) && (
                 <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                  <Badge variant="secondary" className="text-xs">
-                    {difficultyLabel(tournament.filterDifficulty)}
-                  </Badge>
+                  {(tournament.filterDifficulties ?? []).map((d) => (
+                    <Badge key={d} variant="secondary" className="text-xs">
+                      {difficultyLabel(d)}
+                    </Badge>
+                  ))}
                 </div>
               )}
             </Card>
