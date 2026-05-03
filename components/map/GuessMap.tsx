@@ -76,6 +76,7 @@ export default function GuessMap({
       pitchWithRotate: false,
     });
     map.touchZoomRotate.disableRotation();
+    map.touchPitch.disable();
 
     map.addControl(
       new maplibregl.AttributionControl({ compact: true }),
