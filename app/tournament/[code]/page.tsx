@@ -209,6 +209,21 @@ export default function TournamentPage() {
         const isPlayer = data.players.some((p) => p.userId === userId);
         if (!isPlayer && data.status === "lobby") {
           setNotJoined(true);
+          // Pre-fill nick for logged-in users with a saved profile name
+          if (user && !user.is_anonymous) {
+            try {
+              const profileRes = await fetch("/api/profile");
+              if (profileRes.ok) {
+                const profile = await profileRes.json();
+                const name = profile?.displayName as string | null | undefined;
+                if (name) {
+                  setJoinName((prev) => (prev.trim().length === 0 ? name : prev));
+                }
+              }
+            } catch {
+              // silent
+            }
+          }
         }
       } catch (e) {
         setErrorMsg(e instanceof Error ? e.message : "Nie można wczytać turnieju");

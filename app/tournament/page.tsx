@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Filter, Loader2, Sparkles, Users } from "lucide-react";
@@ -47,6 +47,23 @@ export default function TournamentLandingPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const name = data?.displayName as string | null | undefined;
+        if (name) {
+          setDisplayName((prev) => (prev.trim().length === 0 ? name : prev));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function validateName(): string | null {
     const trimmed = displayName.trim();
