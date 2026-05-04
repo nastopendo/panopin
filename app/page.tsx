@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 import { UserNav } from "@/components/UserNav";
 import { Footer } from "@/components/Footer";
+import { getContent } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 
@@ -38,26 +39,8 @@ async function loadStats() {
   }
 }
 
-const STEPS = [
-  {
-    icon: MapPin,
-    title: "Obejrzyj panoramę",
-    desc: "Otwórz zdjęcie 360° i rozejrzyj się — szukaj znajomych ulic, budynków i innych charakterystycznych elementów.",
-  },
-  {
-    icon: Compass,
-    title: "Postaw pinezkę",
-    desc: "Wybierz na mapie miejsce, w którym Twoim zdaniem powstała panorama. Im bliżej trafisz — tym więcej punktów.",
-  },
-  {
-    icon: Trophy,
-    title: "Pobij rekord",
-    desc: "5 lokalizacji, jeden łączny wynik. Walcz o miejsce w rankingu albo udostępnij wynik znajomym i sprawdź, kto trafia celniej.",
-  },
-];
-
 export default async function HomePage() {
-  const stats = await loadStats();
+  const [stats, content] = await Promise.all([loadStats(), getContent()]);
 
   return (
     <main className="bg-aurora min-h-dvh flex flex-col">
@@ -85,20 +68,18 @@ export default async function HomePage() {
       <section className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pt-8 pb-16 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/40 px-3.5 py-1.5 text-xs text-muted-foreground backdrop-blur-md mb-6">
           <Sparkles className="size-3.5 text-brand" />
-          Otwartoźródłowa gra zrobiona dla lokalnej społeczności
+          {content["home.badge"]}
         </span>
 
         <h1 className="text-4xl sm:text-6xl font-bold tracking-tight max-w-3xl text-balance">
-          Zgadnij, gdzie zrobiono{" "}
+          {content["home.hero_title"]}{" "}
           <span className="bg-gradient-to-br from-brand via-brand to-brand/60 bg-clip-text text-transparent">
-            panoramę 360°
+            {content["home.hero_title_highlight"]}
           </span>
         </h1>
 
         <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl text-pretty">
-          Obejrzyj zdjęcie z okolicy, postaw pinezkę na mapie i zdobywaj punkty.
-          Im bliżej trafisz — tym lepiej. 5 lokalizacji, jedna runda, czysta
-          zabawa.
+          {content["home.hero_desc"]}
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -109,7 +90,7 @@ export default async function HomePage() {
             className="w-full sm:w-auto"
           >
             <Link href="/play">
-              Zagraj teraz
+              {content["home.cta_play"]}
               <ArrowRight />
             </Link>
           </Button>
@@ -121,7 +102,7 @@ export default async function HomePage() {
           >
             <Link href="/tournament">
               <Users className="size-5" />
-              Turniej ze znajomymi
+              {content["home.cta_tournament"]}
             </Link>
           </Button>
         </div>
@@ -129,15 +110,15 @@ export default async function HomePage() {
         {stats && stats.panoramas > 0 && (
           <dl className="mt-12 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-12 max-w-xl">
             <Stat
-              label="Panoram w grze"
+              label={content["home.stat_panoramas"]}
               value={stats.panoramas.toLocaleString("pl-PL")}
             />
             <Stat
-              label="Rund rozegranych"
+              label={content["home.stat_rounds"]}
               value={stats.rounds.toLocaleString("pl-PL")}
             />
             <Stat
-              label="Lokalizacji na rundę"
+              label={content["home.stat_per_round"]}
               value="5"
               className="col-span-2 sm:col-span-1"
             />
@@ -148,12 +129,18 @@ export default async function HomePage() {
       <section className="px-4 sm:px-6 pb-20">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-center mb-10">
-            Jak to działa
+            {content["home.how_title"]}
           </h2>
           <ol className="grid sm:grid-cols-3 gap-4">
-            {STEPS.map((step, i) => (
+            {(
+              [
+                { icon: MapPin, titleKey: "home.step1_title", descKey: "home.step1_desc" },
+                { icon: Compass, titleKey: "home.step2_title", descKey: "home.step2_desc" },
+                { icon: Trophy, titleKey: "home.step3_title", descKey: "home.step3_desc" },
+              ] as const
+            ).map((step, i) => (
               <li
-                key={step.title}
+                key={step.titleKey}
                 className="relative rounded-2xl border bg-card/50 p-6 backdrop-blur-md"
               >
                 <span className="absolute -top-3 left-6 rounded-full border bg-background px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
@@ -163,9 +150,9 @@ export default async function HomePage() {
                   className="size-7 text-brand mb-4"
                   strokeWidth={1.6}
                 />
-                <h3 className="text-base font-semibold mb-1.5">{step.title}</h3>
+                <h3 className="text-base font-semibold mb-1.5">{content[step.titleKey]}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {step.desc}
+                  {content[step.descKey]}
                 </p>
               </li>
             ))}

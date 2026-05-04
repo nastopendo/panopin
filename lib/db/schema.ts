@@ -236,6 +236,12 @@ export const tournamentPlayersRelations = relations(tournamentPlayers, ({ one })
   }),
 }));
 
+export const siteContent = pgTable("site_content", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Profile = typeof profiles.$inferSelect;
@@ -249,3 +255,4 @@ export type Difficulty = "easy" | "medium" | "hard" | "extreme";
 export type PhotoStatus = "draft" | "processing" | "published" | "rejected";
 export type TournamentStatus = "lobby" | "playing" | "finished";
 export type ScoringSettingsRow = typeof scoringSettings.$inferSelect;
+export type SiteContentRow = typeof siteContent.$inferSelect;

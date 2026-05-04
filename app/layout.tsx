@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieBanner } from "@/components/CookieBanner";
 import { SwetrixAnalytics } from "@/components/SwetrixAnalytics";
+import { getContent } from "@/lib/content";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,43 +19,44 @@ const geistMono = Geist_Mono({
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og/default`;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Panopin — sprawdź jak dobrze znasz swoją okolicę",
-    template: "%s · Panopin",
-  },
-  description:
-    "Obejrzyj panoramę 360° z okolicy i postaw pinezkę tam, gdzie myślisz że została zrobiona. " +
-    "5 lokalizacji w rundzie — im celniej tym więcej punktów.",
-  applicationName: "Panopin",
-  keywords: ["panopin", "geoguessr", "panorama 360", "gra lokalna", "moja okolica", "zgadywanka"],
-  authors: [{ name: "Panopin" }],
-  openGraph: {
-    type: "website",
-    siteName: "Panopin",
-    title: "Panopin — sprawdź jak dobrze znasz swoją okolicę",
-    description: "Obejrzyj panoramę 360° z okolicy i postaw pinezkę tam, gdzie myślisz że została zrobiona. 5 lokalizacji w rundzie — im celniej tym więcej punktów.",
-    locale: "pl_PL",
-    url: SITE_URL,
-    images: [
-      {
-        url: DEFAULT_OG_IMAGE,
-        secureUrl: DEFAULT_OG_IMAGE,
-        width: 1200,
-        height: 630,
-        type: "image/png",
-        alt: "Panopin — sprawdź jak dobrze znasz swoją okolicę",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Panopin — jak dobrze znasz swoją okolicę?",
-    description: "Obejrzyj panoramę 360° i postaw pinezkę tam, gdzie myślisz że została zrobiona.",
-    images: [DEFAULT_OG_IMAGE],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const c = await getContent();
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: c["meta.title_default"],
+      template: c["meta.title_template"],
+    },
+    description: c["meta.description"],
+    applicationName: c["meta.site_name"],
+    keywords: c["meta.keywords"].split(",").map((k) => k.trim()),
+    authors: [{ name: c["meta.site_name"] }],
+    openGraph: {
+      type: "website",
+      siteName: c["meta.site_name"],
+      title: c["meta.og_title"],
+      description: c["meta.og_description"],
+      locale: "pl_PL",
+      url: SITE_URL,
+      images: [
+        {
+          url: DEFAULT_OG_IMAGE,
+          secureUrl: DEFAULT_OG_IMAGE,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+          alt: c["meta.og_title"],
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: c["meta.twitter_title"],
+      description: c["meta.twitter_description"],
+      images: [DEFAULT_OG_IMAGE],
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#1a1a1f",
