@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Crown, Medal, Trophy } from "lucide-react";
 import { db } from "@/lib/db/client";
-import { rounds, profiles } from "@/lib/db/schema";
+import { rounds, profiles, scoringSettings } from "@/lib/db/schema";
 import { desc, eq, isNotNull } from "drizzle-orm";
+import { ScoringInfoPanel } from "./ScoringInfoPanel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 import { Footer } from "@/components/Footer";
 import { cn } from "@/lib/utils";
+import { DEFAULT_SCORING_CONFIG } from "@/lib/scoring";
 
 export const dynamic = "force-dynamic";
 
@@ -26,20 +28,30 @@ function rankColor(rank: number) {
 }
 
 export default async function LeaderboardPage() {
-  const rawRows = await db
-    .select({
-      id: rounds.id,
-      userId: rounds.userId,
-      anonSessionId: rounds.anonSessionId,
-      totalScore: rounds.totalScore,
-      completedAt: rounds.completedAt,
-      displayName: profiles.displayName,
-    })
-    .from(rounds)
-    .leftJoin(profiles, eq(rounds.userId, profiles.id))
-    .where(isNotNull(rounds.totalScore))
-    .orderBy(desc(rounds.totalScore))
-    .limit(500);
+  const [rawRows, scoringRow] = await Promise.all([
+    db
+      .select({
+        id: rounds.id,
+        userId: rounds.userId,
+        anonSessionId: rounds.anonSessionId,
+        totalScore: rounds.totalScore,
+        completedAt: rounds.completedAt,
+        displayName: profiles.displayName,
+      })
+      .from(rounds)
+      .leftJoin(profiles, eq(rounds.userId, profiles.id))
+      .where(isNotNull(rounds.totalScore))
+      .orderBy(desc(rounds.totalScore))
+      .limit(500),
+    db.select().from(scoringSettings).limit(1),
+  ]);
+
+  const scoring = scoringRow[0];
+  const multEasy = scoring?.multEasy ?? DEFAULT_SCORING_CONFIG.mult.easy;
+  const multMedium = scoring?.multMedium ?? DEFAULT_SCORING_CONFIG.mult.medium;
+  const multHard = scoring?.multHard ?? DEFAULT_SCORING_CONFIG.mult.hard;
+  const multExtreme = scoring?.multExtreme ?? DEFAULT_SCORING_CONFIG.mult.extreme;
+  const maxTimeBonus = scoring?.maxTimeBonus ?? DEFAULT_SCORING_CONFIG.maxTimeBonus;
 
   const seen = new Set<string>();
   const rows: typeof rawRows = [];
@@ -66,7 +78,7 @@ export default async function LeaderboardPage() {
         </Button>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="text-center mb-8">
           <span className="inline-flex items-center gap-1.5 rounded-full border bg-card/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
             <Trophy className="size-3 text-brand" />
@@ -91,7 +103,6 @@ export default async function LeaderboardPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Podium */}
             {podium.length > 0 && (
               <div className="grid sm:grid-cols-3 gap-3">
                 {podium.map((row, i) => (
@@ -106,7 +117,6 @@ export default async function LeaderboardPage() {
               </div>
             )}
 
-            {/* Rest */}
             {rest.length > 0 && (
               <ol className="space-y-1.5 mt-6">
                 {rest.map((row, i) => {
@@ -152,8 +162,16 @@ export default async function LeaderboardPage() {
           </div>
         )}
 
+        <ScoringInfoPanel
+          multEasy={multEasy}
+          multMedium={multMedium}
+          multHard={multHard}
+          multExtreme={multExtreme}
+          maxTimeBonus={maxTimeBonus}
+        />
+
         {rows.length > 0 && (
-          <div className="mt-10 flex justify-center">
+          <div className="mt-6 flex justify-center">
             <Button asChild variant="brand" size="lg">
               <Link href="/play">
                 Zagraj i pobij rekord
