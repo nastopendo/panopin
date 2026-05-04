@@ -9,7 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { db } from "@/lib/db/client";
-import { photos, rounds } from "@/lib/db/schema";
+import { photos, rounds, tournaments } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 import { UserNav } from "@/components/UserNav";
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 async function loadStats() {
   try {
-    const [photoRow, roundRow] = await Promise.all([
+    const [photoRow, roundRow, tournamentRow] = await Promise.all([
       db
         .select({ value: count() })
         .from(photos)
@@ -29,10 +29,15 @@ async function loadStats() {
         .select({ value: count() })
         .from(rounds)
         .where(isNotNull(rounds.totalScore)),
+      db
+        .select({ value: count() })
+        .from(tournaments)
+        .where(eq(tournaments.status, "finished")),
     ]);
     return {
       panoramas: photoRow[0]?.value ?? 0,
       rounds: roundRow[0]?.value ?? 0,
+      tournaments: tournamentRow[0]?.value ?? 0,
     };
   } catch {
     return null;
@@ -108,7 +113,7 @@ export default async function HomePage() {
         </div>
 
         {stats && stats.panoramas > 0 && (
-          <dl className="mt-12 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-12 max-w-xl">
+          <dl className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-10 max-w-2xl">
             <Stat
               label={content["home.stat_panoramas"]}
               value={stats.panoramas.toLocaleString("pl-PL")}
@@ -118,9 +123,12 @@ export default async function HomePage() {
               value={stats.rounds.toLocaleString("pl-PL")}
             />
             <Stat
+              label={content["home.stat_tournaments"]}
+              value={stats.tournaments.toLocaleString("pl-PL")}
+            />
+            <Stat
               label={content["home.stat_per_round"]}
               value="5"
-              className="col-span-2 sm:col-span-1"
             />
           </dl>
         )}
