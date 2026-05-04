@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import type { MapStyle } from "@/lib/map-styles";
 import dynamic from "next/dynamic";
 
 const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), { ssr: false });
@@ -75,6 +76,7 @@ interface EditDraft {
 export default function AdminPhotosPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("street");
   const [loading, setLoading] = useState(true);
 
   // Edit dialog
@@ -96,9 +98,13 @@ export default function AdminPhotosPage() {
     Promise.all([
       fetch("/api/admin/photos").then((r) => r.json()),
       fetch("/api/admin/tags").then((r) => r.json()),
-    ]).then(([photosData, tagsData]: [Photo[], Tag[]]) => {
+      fetch("/api/map-settings").then((r) => r.json()),
+    ]).then(([photosData, tagsData, mapData]: [Photo[], Tag[], { mapStyle?: MapStyle }]) => {
       setPhotos(photosData);
       setTags(tagsData);
+      if (mapData?.mapStyle === "satellite" || mapData?.mapStyle === "street") {
+        setMapStyle(mapData.mapStyle);
+      }
       setLoading(false);
 
       const editId = new URLSearchParams(window.location.search).get("edit");
@@ -454,9 +460,10 @@ export default function AdminPhotosPage() {
               <p className="text-xs text-muted-foreground">Kliknij na mapie lub przeciągnij marker.</p>
               <div className="rounded-lg overflow-hidden border h-48">
                 <LocationPicker
-                  key={editPhoto?.id}
+                  key={`${editPhoto?.id}-${mapStyle}`}
                   lat={isNaN(parseFloat(draft.lat)) ? null : parseFloat(draft.lat)}
                   lng={isNaN(parseFloat(draft.lng)) ? null : parseFloat(draft.lng)}
+                  mapStyle={mapStyle}
                   onChange={(lat, lng) => {
                     setDraft((d) => ({ ...d, lat: lat.toString(), lng: lng.toString() }));
                     setLatError("");
