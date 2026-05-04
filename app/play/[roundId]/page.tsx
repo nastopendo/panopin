@@ -168,6 +168,8 @@ export default function RoundPage() {
   const handleGuessRef = useRef<
     ((guess: { lat: number; lng: number }) => Promise<void>) | null
   >(null);
+  // Guards against React 19 Strict Mode dev double-invoke of the load effect.
+  const initRef = useRef(false);
 
   // Load tournament state + subscribe to live score updates
   useEffect(() => {
@@ -215,6 +217,27 @@ export default function RoundPage() {
   }, [tournamentCode]);
 
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    const sessionKey = `panopin:active-round:${roundId}`;
+    // Real F5/reload: previous mount stored the flag; this fresh component
+    // instance finds it and treats the round as abandoned. SPA navigation
+    // creates a new roundId so the key differs — no false positive.
+    if (sessionStorage.getItem(sessionKey)) {
+      sessionStorage.removeItem(sessionKey);
+      fetch(`/api/rounds/${roundId}/finish`, { method: "POST" })
+        .catch(() => {})
+        .finally(() => {
+          setErrorMsg(
+            "Rozgrywka została przerwana po odświeżeniu strony. Rozpocznij nową grę, aby spróbować ponownie.",
+          );
+          setPhase("error");
+        });
+      return;
+    }
+    sessionStorage.setItem(sessionKey, "1");
+
     Promise.all([
       fetch(`/api/rounds/${roundId}`).then((r) => r.json()),
       fetch("/api/map-settings").then((r) => r.json()),
@@ -241,6 +264,17 @@ export default function RoundPage() {
         setPhase("error");
       });
   }, [roundId]);
+
+  // Warn the user before refresh/close/navigation while the round is in progress.
+  useEffect(() => {
+    if (phase !== "playing" && phase !== "revealed") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [phase]);
 
   // Keep handleGuessRef in sync so the timer callback always sees the latest version
   useEffect(() => {
@@ -319,6 +353,7 @@ export default function RoundPage() {
 
   async function handleNext() {
     if (step + 1 >= photos.length) {
+      sessionStorage.removeItem(`panopin:active-round:${roundId}`);
       try {
         const res = await fetch(`/api/rounds/${roundId}/finish`, {
           method: "POST",
