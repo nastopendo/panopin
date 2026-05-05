@@ -26,7 +26,7 @@ export function HBar({
           className="h-full rounded-full transition-all"
           style={{
             width: `${pct}%`,
-            backgroundColor: color ?? "hsl(var(--primary))",
+            backgroundColor: color ?? "var(--primary)",
           }}
         />
       </div>

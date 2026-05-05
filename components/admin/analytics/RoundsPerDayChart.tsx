@@ -35,7 +35,7 @@ export function RoundsPerDayChart({ data }: { data: RoundPerDay[] }) {
               className="rounded-sm w-full transition-all"
               style={{
                 height: `${Math.max((d.count / max) * 100, d.count > 0 ? 4 : 0)}%`,
-                backgroundColor: "hsl(var(--primary))",
+                backgroundColor: "var(--primary)",
                 opacity: 0.85,
               }}
             />
