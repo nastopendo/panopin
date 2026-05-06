@@ -24,7 +24,7 @@ export function RoundsPerDayChart({ data }: { data: RoundPerDay[] }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-end gap-0.5 h-32">
+      <div className="flex items-stretch gap-0.5 h-32">
         {filled.map((d) => (
           <div
             key={d.day}
