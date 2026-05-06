@@ -1,6 +1,11 @@
 import { ImageResponse } from "next/og";
+import { readFileSync } from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
+
+const logoData = readFileSync(path.join(process.cwd(), "public/images/panopin-logo-dark.png"));
+const logoSrc = `data:image/png;base64,${logoData.toString("base64")}`;
 
 export async function GET() {
   return new ImageResponse(
@@ -40,43 +45,8 @@ export async function GET() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", marginBottom: 32 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 64,
-                height: 64,
-                background: "linear-gradient(135deg, #E8AA3C 0%, #B5811C 100%)",
-                borderRadius: 14,
-                marginRight: 18,
-                boxShadow: "0 0 32px rgba(232,170,60,0.55)",
-              }}
-            >
-              <svg
-                width="38"
-                height="38"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#2A1900"
-                strokeWidth={2.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 13a9 9 0 0 1 18 0" />
-                <circle cx="12" cy="14.5" r="2.5" fill="#2A1900" stroke="none" />
-              </svg>
-            </div>
-            <span
-              style={{
-                fontSize: 42,
-                fontWeight: 800,
-                color: "white",
-                letterSpacing: -1,
-              }}
-            >
-              Panopin
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoSrc} alt="Panopin" style={{ height: 56, width: "auto" }} />
           </div>
 
           <span

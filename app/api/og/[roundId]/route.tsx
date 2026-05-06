@@ -1,7 +1,12 @@
 import { ImageResponse } from "next/og";
+import { readFileSync } from "fs";
+import path from "path";
 import { db } from "@/lib/db/client";
 import { guesses, rounds } from "@/lib/db/schema";
 import { and, count, eq, isNotNull, lt, ne } from "drizzle-orm";
+
+const logoData = readFileSync(path.join(process.cwd(), "public/images/panopin-logo-dark.png"));
+const logoSrc = `data:image/png;base64,${logoData.toString("base64")}`;
 
 export const runtime = "nodejs";
 
@@ -113,39 +118,11 @@ export async function GET(
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 14,
             padding: "44px 72px 0",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 44,
-              height: 44,
-              background: "linear-gradient(135deg, #E8AA3C 0%, #B5811C 100%)",
-              borderRadius: 10,
-              boxShadow: "0 0 28px rgba(232,170,60,0.5)",
-            }}
-          >
-            <svg
-              width="26"
-              height="26"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#2A1900"
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 13a9 9 0 0 1 18 0" />
-              <circle cx="12" cy="14.5" r="2.5" fill="#2A1900" stroke="none" />
-            </svg>
-          </div>
-          <span style={{ fontSize: 26, fontWeight: 700, color: "white", letterSpacing: "-0.5px" }}>
-            Panopin
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoSrc} alt="Panopin" style={{ height: 44, width: "auto" }} />
         </div>
 
         {/* Main content row */}

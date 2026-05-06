@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -9,58 +10,50 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  sm: { mark: "size-6", text: "text-sm" },
-  md: { mark: "size-7", text: "text-base" },
-  lg: { mark: "size-10", text: "text-xl" },
+  sm: { logoClass: "h-6 w-auto", iconClass: "h-6 w-6" },
+  md: { logoClass: "h-7 w-auto", iconClass: "h-7 w-7" },
+  lg: { logoClass: "h-10 w-auto", iconClass: "h-10 w-10" },
 };
 
-/**
- * Panopin wordmark.
- * The mark blends a map pin with a panorama-arc — orientation that distinguishes
- * Panopin from generic GeoGuessr clones at a glance.
- */
 export function Logo({
   href = "/",
   className,
   showWordmark = true,
   size = "md",
 }: LogoProps) {
-  const sizes = sizeMap[size];
-  const Mark = (
-    <span
-      aria-hidden
-      className={cn(
-        "relative inline-flex items-center justify-center rounded-lg",
-        "bg-gradient-to-br from-brand to-brand/60 text-brand-foreground",
-        "shadow-[0_8px_30px_-12px_color-mix(in_oklab,var(--color-brand)_60%,transparent)]",
-        sizes.mark,
-      )}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-3/5"
-      >
-        <path d="M3 13a9 9 0 0 1 18 0" />
-        <circle cx="12" cy="14.5" r="2.5" fill="currentColor" stroke="none" />
-      </svg>
-    </span>
-  );
+  const { logoClass, iconClass } = sizeMap[size];
 
   const content = (
-    <span
-      className={cn(
-        "inline-flex items-center gap-2 font-semibold tracking-tight text-foreground",
-        sizes.text,
-        className,
+    <span className={cn("inline-flex items-center", className)}>
+      {showWordmark ? (
+        <>
+          <Image
+            src="/images/panopin-logo-light.png"
+            alt="Panopin"
+            width={512}
+            height={135}
+            className={cn(logoClass, "block dark:hidden")}
+            priority
+          />
+          <Image
+            src="/images/panopin-logo-dark.png"
+            alt="Panopin"
+            width={512}
+            height={135}
+            className={cn(logoClass, "hidden dark:block")}
+            priority
+          />
+        </>
+      ) : (
+        <Image
+          src="/images/icon.png"
+          alt="Panopin"
+          width={256}
+          height={256}
+          className={iconClass}
+          priority
+        />
       )}
-    >
-      {Mark}
-      {showWordmark && <span>Panopin</span>}
     </span>
   );
 
