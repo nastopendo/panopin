@@ -23,10 +23,10 @@ export function HBar({
       )}
       <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
         <div
-          className="h-full rounded-full transition-all"
+          className={`h-full rounded-full transition-all ${color ? "" : "bg-primary"}`}
           style={{
             width: `${pct}%`,
-            backgroundColor: color ?? "var(--primary)",
+            ...(color ? { backgroundColor: color } : {}),
           }}
         />
       </div>

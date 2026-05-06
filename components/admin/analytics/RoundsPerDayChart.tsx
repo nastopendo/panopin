@@ -32,11 +32,9 @@ export function RoundsPerDayChart({ data }: { data: RoundPerDay[] }) {
             title={`${d.day}: ${d.count} rund`}
           >
             <div
-              className="rounded-sm w-full transition-all"
+              className="rounded-sm w-full transition-all bg-primary/85"
               style={{
                 height: `${Math.max((d.count / max) * 100, d.count > 0 ? 4 : 0)}%`,
-                backgroundColor: "var(--primary)",
-                opacity: 0.85,
               }}
             />
           </div>
