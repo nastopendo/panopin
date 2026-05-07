@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="border-t border-border/60 px-4 sm:px-6 py-6 text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3">
-      <span>© {new Date().getFullYear()} Panopin · Projekt open-source (MIT)</span>
+      <span>© {new Date().getFullYear()} <a href="https://www.panopin.pl" className="hover:text-foreground transition-colors">Panopin</a> · <a href="https://github.com/nastopendo/panopin" className="hover:text-foreground transition-colors">Projekt open-source (MIT)</a></span>
       <nav className="flex items-center gap-4 flex-wrap justify-center">
         <Link href="/leaderboard" className="hover:text-foreground transition-colors">
           Ranking
