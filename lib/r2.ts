@@ -40,4 +40,5 @@ export const r2Keys = {
   tile: (photoId: string, face: string, level: number, y: number, x: number) =>
     `tiles/${photoId}/${face}/${level}/${y}_${x}.jpg`,
   share: (roundId: string) => `shares/${roundId}.png`,
+  media: (id: string, ext: string) => `media/${id}.${ext.replace(/^\./, "")}`,
 };

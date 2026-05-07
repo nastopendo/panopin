@@ -242,6 +242,31 @@ export const siteContent = pgTable("site_content", {
   updatedAt: timestamptz("updated_at").notNull().defaultNow(),
 });
 
+export const mediaAssets = pgTable("media_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  url: text("url").notNull(),
+  storageKey: text("storage_key").notNull(),
+  filename: text("filename"),
+  contentType: text("content_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => profiles.id),
+  uploadedAt: timestamptz("uploaded_at").defaultNow().notNull(),
+});
+
+export const announcement = pgTable("announcement", {
+  id: integer("id").primaryKey(), // singleton — always id=1
+  title: text("title").notNull(),
+  body: text("body").notNull(), // sanitized HTML from TipTap
+  imageUrl: text("image_url"),
+  ctaText: text("cta_text"),
+  ctaUrl: text("cta_url"),
+  visible: boolean("visible").notNull().default(false),
+  showOnHome: boolean("show_on_home").notNull().default(true),
+  showOnLeaderboard: boolean("show_on_leaderboard").notNull().default(true),
+  showAsPopup: boolean("show_as_popup").notNull().default(false),
+  updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Profile = typeof profiles.$inferSelect;
@@ -256,3 +281,5 @@ export type PhotoStatus = "draft" | "processing" | "published" | "rejected";
 export type TournamentStatus = "lobby" | "playing" | "finished";
 export type ScoringSettingsRow = typeof scoringSettings.$inferSelect;
 export type SiteContentRow = typeof siteContent.$inferSelect;
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type AnnouncementRow = typeof announcement.$inferSelect;

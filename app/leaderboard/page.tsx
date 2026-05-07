@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 import { Footer } from "@/components/Footer";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { AnnouncementPopup } from "@/components/AnnouncementPopup";
 import { cn } from "@/lib/utils";
 import { DEFAULT_SCORING_CONFIG } from "@/lib/scoring";
 
@@ -77,6 +79,11 @@ export default async function LeaderboardPage() {
           </Link>
         </Button>
       </header>
+
+      <div className="pt-4">
+        <AnnouncementBanner placement="leaderboard" />
+      </div>
+      <AnnouncementPopup />
 
       <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="text-center mb-8">

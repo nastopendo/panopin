@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 import { UserNav } from "@/components/UserNav";
 import { Footer } from "@/components/Footer";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { AnnouncementPopup } from "@/components/AnnouncementPopup";
 import { getContent } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
@@ -133,6 +135,9 @@ export default async function HomePage() {
           </dl>
         )}
       </section>
+
+      <AnnouncementBanner placement="home" />
+      <AnnouncementPopup />
 
       <section className="px-4 sm:px-6 pb-20">
         <div className="mx-auto max-w-5xl">
