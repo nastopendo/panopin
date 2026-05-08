@@ -39,6 +39,10 @@ export const DEFAULT_CONTENT = {
   "play.difficulty_medium": "Średnie",
   "play.difficulty_hard": "Trudne",
   "play.difficulty_extreme": "Ekstremalne",
+  "play.guest_card_title": "Zapisz ten wynik na swoim koncie",
+  "play.guest_card_desc":
+    "Grasz jako gość. Zaloguj się, aby ten wynik został przypisany do Twojego konta i pojawił się w rankingu - dotychczasowe rundy zostaną zachowane.",
+  "play.guest_card_button": "Zaloguj się i zachowaj wynik",
   // ── Turniej ────────────────────────────────────────────────────────────────
   "tournament.badge": "Turniej · do 20 graczy",
   "tournament.hero_title": "Zagraj ze znajomymi",
@@ -113,6 +117,9 @@ export const CONTENT_META: Record<
   "play.difficulty_medium": { section: "Gra solo", label: "Trudność: Średnie" },
   "play.difficulty_hard": { section: "Gra solo", label: "Trudność: Trudne" },
   "play.difficulty_extreme": { section: "Gra solo", label: "Trudność: Ekstremalne" },
+  "play.guest_card_title": { section: "Gra solo", label: "Karta gościa — tytuł", description: "Wyświetlana na ekranie końcowym dla niezalogowanych graczy" },
+  "play.guest_card_desc": { section: "Gra solo", label: "Karta gościa — opis", multiline: true },
+  "play.guest_card_button": { section: "Gra solo", label: "Karta gościa — przycisk logowania" },
 
   "tournament.badge": { section: "Turniej", label: "Badge (np. 'Turniej · do 20 graczy')" },
   "tournament.hero_title": { section: "Turniej", label: "Tytuł strony" },
