@@ -38,13 +38,17 @@ export async function GET(request: NextRequest) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const [profile] = await db
-          .select({ role: profiles.role })
+          .select({ role: profiles.role, displayName: profiles.displayName })
           .from(profiles)
           .where(eq(profiles.id, user.id))
           .limit(1);
 
         if (profile?.role === "admin") {
           return NextResponse.redirect(`${origin}/admin/photos`);
+        }
+
+        if (!profile?.displayName) {
+          return NextResponse.redirect(`${origin}/setup`);
         }
       }
 
