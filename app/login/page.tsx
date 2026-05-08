@@ -126,6 +126,10 @@ function LoginInner() {
               <strong className="text-foreground">{email}</strong>. Kliknij go
               aby się zalogować.
             </p>
+            <p className="text-muted-foreground text-xs">
+              Nie widzisz wiadomości? Sprawdź folder{" "}
+              <strong className="text-foreground">Spam</strong>.
+            </p>
             <button
               onClick={() => setSent(false)}
               className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors pt-2"
