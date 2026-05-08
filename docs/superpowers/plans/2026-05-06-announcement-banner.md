@@ -1607,7 +1607,7 @@ export async function AnnouncementBanner() {
             <img
               src={row.imageUrl}
               alt=""
-              className="w-full h-full object-cover aspect-video md:aspect-auto"
+              className="w-full h-full object-contain aspect-video md:aspect-auto bg-muted"
             />
           )}
           <div className="p-6 sm:p-8 flex flex-col gap-3 justify-center">
