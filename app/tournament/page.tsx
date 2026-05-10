@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Filter, Loader2, Sparkles, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Filter,
+  Loader2,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { ensureGuestSession } from "@/lib/auth/guest";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +50,8 @@ export default function TournamentLandingPage() {
 
   const [displayName, setDisplayName] = useState("");
   const [code, setCode] = useState("");
-  const [difficulties, setDifficulties] = useState<Difficulty[]>(DEFAULT_DIFFICULTIES);
+  const [difficulties, setDifficulties] =
+    useState<Difficulty[]>(DEFAULT_DIFFICULTIES);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +94,10 @@ export default function TournamentLandingPage() {
     setError(null);
     try {
       await ensureGuestSession();
-      const body: Record<string, unknown> = { displayName: displayName.trim(), filterDifficulties: difficulties };
+      const body: Record<string, unknown> = {
+        displayName: displayName.trim(),
+        filterDifficulties: difficulties,
+      };
 
       const res = await fetch("/api/tournaments", {
         method: "POST",
@@ -94,11 +105,14 @@ export default function TournamentLandingPage() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.toString() ?? `HTTP ${res.status}`);
+      if (!res.ok)
+        throw new Error(data.error?.toString() ?? `HTTP ${res.status}`);
 
       router.push(`/tournament/${data.code}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Nie udało się utworzyć turnieju");
+      setError(
+        e instanceof Error ? e.message : "Nie udało się utworzyć turnieju",
+      );
       setSubmitting(false);
     }
   }
@@ -125,7 +139,8 @@ export default function TournamentLandingPage() {
         body: JSON.stringify({ displayName: displayName.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.toString() ?? `HTTP ${res.status}`);
+      if (!res.ok)
+        throw new Error(data.error?.toString() ?? `HTTP ${res.status}`);
 
       router.push(`/tournament/${normalized}`);
     } catch (e) {
@@ -215,7 +230,8 @@ export default function TournamentLandingPage() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground">
-                  {displayName.trim().length}/{TOURNAMENT_DISPLAY_NAME_MAX} znaków
+                  {displayName.trim().length}/{TOURNAMENT_DISPLAY_NAME_MAX}{" "}
+                  znaków
                 </p>
               </div>
             </CardContent>
@@ -228,17 +244,26 @@ export default function TournamentLandingPage() {
                   <Filter className="size-4 text-muted-foreground" />
                   Filtry
                 </CardTitle>
-                <CardDescription>Zostaną zastosowane do losowania zdjęć.</CardDescription>
+                <CardDescription>
+                  Wybierz, z jakich zdjęć losować rundę.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
-                    Trudność
-                  </p>
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Poziomy trudności
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      zaznacz dowolną kombinację
+                    </p>
+                  </div>
                   <ToggleGroup
                     type="multiple"
                     value={difficulties}
-                    onValueChange={(v) => v.length > 0 && setDifficulties(v as Difficulty[])}
+                    onValueChange={(v) =>
+                      v.length > 0 && setDifficulties(v as Difficulty[])
+                    }
                     className="w-full"
                   >
                     {DIFFICULTY_OPTIONS.map((opt) => (
@@ -253,7 +278,6 @@ export default function TournamentLandingPage() {
                     ))}
                   </ToggleGroup>
                 </div>
-
               </CardContent>
             </Card>
           ) : (

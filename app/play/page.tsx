@@ -30,7 +30,8 @@ const DEFAULT_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 export default function PlayPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [difficulties, setDifficulties] = useState<Difficulty[]>(DEFAULT_DIFFICULTIES);
+  const [difficulties, setDifficulties] =
+    useState<Difficulty[]>(DEFAULT_DIFFICULTIES);
   const router = useRouter();
 
   async function startGame() {
@@ -39,7 +40,9 @@ export default function PlayPage() {
     try {
       await ensureGuestSession();
 
-      const body: Record<string, unknown> = { filterDifficulties: difficulties };
+      const body: Record<string, unknown> = {
+        filterDifficulties: difficulties,
+      };
 
       const res = await fetch("/api/rounds", {
         method: "POST",
@@ -75,13 +78,15 @@ export default function PlayPage() {
         <div className="w-full max-w-md flex flex-col items-center gap-6">
           <div className="text-center space-y-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border bg-card/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
-              <Sparkles className="size-3 text-brand" />5 lokalizacji · jedna runda
+              <Sparkles className="size-3 text-brand" />5 lokalizacji · jedna
+              runda
             </span>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
               Gotów do gry?
             </h1>
             <p className="text-muted-foreground">
-              Wybierz trudność i opcjonalne tagi — albo zostaw wszystko i zaczynaj.
+              Wybierz trudność i opcjonalne tagi — albo zostaw wszystko i
+              zaczynaj.
             </p>
           </div>
 
@@ -91,17 +96,26 @@ export default function PlayPage() {
                 <Filter className="size-4 text-muted-foreground" />
                 Filtry
               </CardTitle>
-              <CardDescription>Zostaną zastosowane do losowania.</CardDescription>
+              <CardDescription>
+                Wybierz, z jakich zdjęć losować rundę.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Trudność
-                </p>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Poziomy trudności
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    zaznacz dowolną kombinację
+                  </p>
+                </div>
                 <ToggleGroup
                   type="multiple"
                   value={difficulties}
-                  onValueChange={(v) => v.length > 0 && setDifficulties(v as Difficulty[])}
+                  onValueChange={(v) =>
+                    v.length > 0 && setDifficulties(v as Difficulty[])
+                  }
                   className="w-full"
                 >
                   {DIFFICULTY_OPTIONS.map((opt) => (
@@ -116,7 +130,6 @@ export default function PlayPage() {
                   ))}
                 </ToggleGroup>
               </div>
-
             </CardContent>
           </Card>
 
