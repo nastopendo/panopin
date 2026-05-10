@@ -172,44 +172,58 @@ export default function GuessMap({
     // Line from guess to actual — read position from the live marker (never stale)
     const gPos = guessMarkerRef.current?.getLngLat();
     if (gPos) {
+      // Bullseye: guess matches actual within ~0.1 m. A zero-area LngLatBounds
+      // crashes MapLibre's fitBounds (NaN zoom from divide-by-zero), so center
+      // and zoom in directly without a connecting line.
+      const isBullseye =
+        Math.abs(gPos.lng - actualLocation.lng) < 1e-6 &&
+        Math.abs(gPos.lat - actualLocation.lat) < 1e-6;
+
       if (map.getLayer("guess-line")) map.removeLayer("guess-line");
       if (map.getSource("guess-line")) map.removeSource("guess-line");
 
-      map.addSource("guess-line", {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: {
-            type: "LineString",
-            coordinates: [
-              [gPos.lng, gPos.lat],
-              [actualLocation.lng, actualLocation.lat],
-            ],
+      if (!isBullseye) {
+        map.addSource("guess-line", {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [gPos.lng, gPos.lat],
+                [actualLocation.lng, actualLocation.lat],
+              ],
+            },
           },
-        },
-      });
-      map.addLayer({
-        id: "guess-line",
-        type: "line",
-        source: "guess-line",
-        paint: {
-          "line-color": "#94a3b8",
-          "line-width": 2,
-          "line-dasharray": [3, 3],
-        },
-      });
+        });
+        map.addLayer({
+          id: "guess-line",
+          type: "line",
+          source: "guess-line",
+          paint: {
+            "line-color": "#94a3b8",
+            "line-width": 2,
+            "line-dasharray": [3, 3],
+          },
+        });
 
-      // Fit map to show both pins
-      const bounds = new maplibregl.LngLatBounds()
-        .extend([gPos.lng, gPos.lat])
-        .extend([actualLocation.lng, actualLocation.lat]);
-      map.fitBounds(bounds, {
-        padding: 140,
-        maxZoom: 30,
-        duration: 900,
-        linear: true,
-      });
+        const bounds = new maplibregl.LngLatBounds()
+          .extend([gPos.lng, gPos.lat])
+          .extend([actualLocation.lng, actualLocation.lat]);
+        map.fitBounds(bounds, {
+          padding: 140,
+          maxZoom: 30,
+          duration: 900,
+          linear: true,
+        });
+      } else {
+        map.easeTo({
+          center: [actualLocation.lng, actualLocation.lat],
+          zoom: Math.max(map.getZoom(), 16),
+          duration: 900,
+        });
+      }
     }
   }, [actualLocation]);
 
