@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ function fromApi(row: ApiRow): Form {
 
 export default function AnnouncementPage() {
   const [form, setForm] = useState<Form | null>(null);
-  const originalRef = useRef<Form>(EMPTY);
+  const [original, setOriginal] = useState<Form>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,7 +73,7 @@ export default function AnnouncementPage() {
       .then((row) => {
         const f = row ? fromApi(row) : EMPTY;
         setForm(f);
-        originalRef.current = f;
+        setOriginal(f);
       })
       .catch(() => setError("Nie można wczytać ogłoszenia"));
   }, []);
@@ -96,7 +96,7 @@ export default function AnnouncementPage() {
     );
   }
 
-  const dirty = JSON.stringify(form) !== JSON.stringify(originalRef.current);
+  const dirty = JSON.stringify(form) !== JSON.stringify(original);
 
   async function handleSave() {
     if (!form || !dirty) return;
@@ -120,7 +120,7 @@ export default function AnnouncementPage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      originalRef.current = form;
+      setOriginal(form);
       toast.success("Ogłoszenie zapisane");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Błąd zapisu");
@@ -138,7 +138,11 @@ export default function AnnouncementPage() {
             Banner widoczny na stronie głównej i rankingu.
           </p>
         </div>
-        <Button onClick={handleSave} disabled={saving || !dirty} variant="brand">
+        <Button
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          variant="brand"
+        >
           {saving ? (
             <>
               <Loader2 className="animate-spin" />
@@ -181,8 +185,8 @@ export default function AnnouncementPage() {
         <CardHeader>
           <CardTitle className="text-base">Gdzie wyświetlać</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Wybierz miejsca, w których ogłoszenie ma się pojawić. Gracze mogą zamknąć
-            ogłoszenie — wróci, gdy zaktualizujesz treść.
+            Wybierz miejsca, w których ogłoszenie ma się pojawić. Gracze mogą
+            zamknąć ogłoszenie - wróci, gdy zaktualizujesz treść.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -200,12 +204,14 @@ export default function AnnouncementPage() {
             description="Banner nad listą najlepszych wyników."
             checked={form.showOnLeaderboard}
             disabled={!form.visible}
-            onChange={(v) => setForm((f) => f && { ...f, showOnLeaderboard: v })}
+            onChange={(v) =>
+              setForm((f) => f && { ...f, showOnLeaderboard: v })
+            }
           />
           <PlacementToggle
             id="showAsPopup"
             label="Pop-up po wejściu na stronę"
-            description="Modal wyświetlany raz — wraca dopiero po edycji ogłoszenia."
+            description="Modal wyświetlany raz - wraca dopiero po edycji ogłoszenia."
             checked={form.showAsPopup}
             disabled={!form.visible}
             onChange={(v) => setForm((f) => f && { ...f, showAsPopup: v })}
@@ -224,7 +230,9 @@ export default function AnnouncementPage() {
               id="title"
               maxLength={200}
               value={form.title}
-              onChange={(e) => setForm((f) => f && { ...f, title: e.target.value })}
+              onChange={(e) =>
+                setForm((f) => f && { ...f, title: e.target.value })
+              }
             />
           </div>
           <div className="space-y-1.5">
@@ -255,7 +263,9 @@ export default function AnnouncementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Przycisk akcji (opcjonalnie)</CardTitle>
+          <CardTitle className="text-base">
+            Przycisk akcji (opcjonalnie)
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
@@ -265,7 +275,9 @@ export default function AnnouncementPage() {
               maxLength={60}
               placeholder="np. Zobacz regulamin"
               value={form.ctaText}
-              onChange={(e) => setForm((f) => f && { ...f, ctaText: e.target.value })}
+              onChange={(e) =>
+                setForm((f) => f && { ...f, ctaText: e.target.value })
+              }
             />
           </div>
           <div className="space-y-1.5">
@@ -275,7 +287,9 @@ export default function AnnouncementPage() {
               type="url"
               placeholder="https://…"
               value={form.ctaUrl}
-              onChange={(e) => setForm((f) => f && { ...f, ctaUrl: e.target.value })}
+              onChange={(e) =>
+                setForm((f) => f && { ...f, ctaUrl: e.target.value })
+              }
             />
             <p className="text-xs text-muted-foreground">
               Oba pola muszą być wypełnione, żeby przycisk się wyświetlił.

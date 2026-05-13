@@ -11,20 +11,23 @@ export default function CookiesPage() {
   return (
     <article className="prose prose-sm prose-invert max-w-none">
       <h1>Polityka cookies</h1>
-      <p className="lead text-muted-foreground">Ostatnia aktualizacja: kwiecień 2025</p>
+      <p className="lead text-muted-foreground">
+        Ostatnia aktualizacja: kwiecień 2026
+      </p>
 
       <h2>Czym są pliki cookies?</h2>
       <p>
-        Pliki cookies (ciasteczka) to małe pliki tekstowe zapisywane przez przeglądarkę na Twoim
-        urządzeniu. Serwis korzysta też z mechanizmu <code>localStorage</code> — podobnego, ale
-        dostępnego wyłącznie po stronie przeglądarki i nieprzesyłanego do serwera przy każdym
-        żądaniu.
+        Pliki cookies (ciasteczka) to małe pliki tekstowe zapisywane przez
+        przeglądarkę na Twoim urządzeniu. Serwis korzysta też z mechanizmu{" "}
+        <code>localStorage</code> - podobnego, ale dostępnego wyłącznie po
+        stronie przeglądarki i nieprzesyłanego do serwera przy każdym żądaniu.
       </p>
 
       <h2>Jakich cookies używamy</h2>
       <p>
-        Panopin używa wyłącznie plików cookies i wpisów localStorage niezbędnych do działania
-        serwisu. Nie stosujemy cookies analitycznych ani marketingowych.
+        Panopin używa wyłącznie plików cookies i wpisów localStorage niezbędnych
+        do działania serwisu. Nie stosujemy cookies analitycznych ani
+        marketingowych.
       </p>
 
       <div className="not-prose overflow-x-auto mt-4 mb-6">
@@ -42,8 +45,8 @@ export default function CookiesPage() {
               <td className="py-3 pr-4 font-mono text-xs">sb-*</td>
               <td className="py-3 pr-4">Cookie HTTP</td>
               <td className="py-3 pr-4">
-                Sesja uwierzytelniania (Supabase Auth) — niezbędna do gry, przechowywania wyników
-                i logowania.
+                Sesja uwierzytelniania (Supabase Auth) - niezbędna do gry,
+                przechowywania wyników i logowania.
               </td>
               <td className="py-3">90 dni lub do wylogowania</td>
             </tr>
@@ -51,8 +54,8 @@ export default function CookiesPage() {
               <td className="py-3 pr-4 font-mono text-xs">cookie_consent</td>
               <td className="py-3 pr-4">localStorage</td>
               <td className="py-3 pr-4">
-                Zapamiętuje, że zapoznałeś się z informacją o cookies, aby nie wyświetlać jej
-                ponownie.
+                Zapamiętuje, że zapoznałeś się z informacją o cookies, aby nie
+                wyświetlać jej ponownie.
               </td>
               <td className="py-3">Do wyczyszczenia localStorage</td>
             </tr>
@@ -62,13 +65,12 @@ export default function CookiesPage() {
 
       <h2>Jak zarządzać cookies</h2>
       <p>
-        Możesz zablokować lub usunąć cookies w ustawieniach swojej przeglądarki. Należy jednak
-        pamiętać, że zablokowanie cookie sesji Supabase (<code>sb-*</code>) uniemożliwi
-        korzystanie z gry — sesja i wyniki nie będą zapisywane.
+        Możesz zablokować lub usunąć cookies w ustawieniach swojej przeglądarki.
+        Należy jednak pamiętać, że zablokowanie cookie sesji Supabase (
+        <code>sb-*</code>) uniemożliwi korzystanie z gry - sesja i wyniki nie
+        będą zapisywane.
       </p>
-      <p>
-        Instrukcje zarządzania cookies dla popularnych przeglądarek:
-      </p>
+      <p>Instrukcje zarządzania cookies dla popularnych przeglądarek:</p>
       <ul>
         <li>
           <a

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ export default function ContentPage() {
   const [resetting, setResetting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const originalRef = useRef<Draft>({});
 
   useEffect(() => {
     fetch("/api/admin/content")
@@ -36,13 +35,12 @@ export default function ContentPage() {
         setEntries(data);
         const values = Object.fromEntries(data.map((e) => [e.key, e.value]));
         setDraft(values);
-        originalRef.current = values;
       })
       .catch(() => setError("Nie można wczytać treści"));
   }, []);
 
   const dirtyKeys = entries
-    ? entries.filter((e) => draft[e.key] !== originalRef.current[e.key]).map((e) => e.key)
+    ? entries.filter((e) => draft[e.key] !== e.value).map((e) => e.key)
     : [];
 
   const dirty = dirtyKeys.length > 0;
@@ -59,7 +57,6 @@ export default function ContentPage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      originalRef.current = { ...draft };
       setEntries((prev) =>
         prev
           ? prev.map((e) => ({
@@ -87,7 +84,6 @@ export default function ContentPage() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setDraft((d) => ({ ...d, [key]: defaultValue }));
-      originalRef.current = { ...originalRef.current, [key]: defaultValue };
       setEntries((prev) =>
         prev ? prev.map((e) => (e.key === key ? { ...e, value: defaultValue, isDefault: true } : e)) : prev,
       );
@@ -174,7 +170,7 @@ export default function ContentPage() {
             </CardHeader>
             <CardContent className="space-y-5">
               {sectionEntries.map((entry) => {
-                const isDirty = draft[entry.key] !== originalRef.current[entry.key];
+                const isDirty = draft[entry.key] !== entry.value;
                 const isOverridden = draft[entry.key] !== entry.defaultValue;
                 return (
                   <div key={entry.key} className="space-y-1.5">

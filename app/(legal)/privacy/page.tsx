@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Polityka prywatności",
   description:
-    "Polityka prywatności serwisu Panopin — informacje o przetwarzaniu danych osobowych.",
+    "Polityka prywatności serwisu Panopin - informacje o przetwarzaniu danych osobowych.",
 };
 
 const owner = process.env.NEXT_PUBLIC_SITE_OWNER ?? "administrator serwisu";
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
     <article className="prose prose-sm prose-invert max-w-none">
       <h1>Polityka prywatności</h1>
       <p className="lead text-muted-foreground">
-        Ostatnia aktualizacja: kwiecień 2025
+        Ostatnia aktualizacja: kwiecień 2026
       </p>
 
       <h2>1. Administrator danych</h2>
@@ -28,24 +28,24 @@ export default function PrivacyPage() {
       <p>Serwis przetwarza następujące dane:</p>
       <ul>
         <li>
-          <strong>Anonimowy identyfikator sesji</strong> — generowany
+          <strong>Anonimowy identyfikator sesji</strong> - generowany
           automatycznie przy każdej wizycie, niezbędny do działania gry. Nie
           jest powiązany z tożsamością użytkownika, dopóki nie zaloguje się on
           kontem Google.
         </li>
         <li>
-          <strong>Adres e-mail</strong> — wyłącznie w przypadku logowania przez
+          <strong>Adres e-mail</strong> - wyłącznie w przypadku logowania przez
           Google lub link e-mail. Używany do identyfikacji konta i nie jest
           udostępniany publicznie ani innym użytkownikom. Administrator może
           skontaktować się z użytkownikiem mailowo wyłącznie w celu wręczenia
           ewentualnych upominków lub nagród związanych z grą.
         </li>
         <li>
-          <strong>Nazwa wyświetlana</strong> — opcjonalna, ustawiana przez
+          <strong>Nazwa wyświetlana</strong> - opcjonalna, ustawiana przez
           użytkownika. Widoczna publicznie w rankingu.
         </li>
         <li>
-          <strong>Wyniki gier</strong> — współrzędne geograficzne odpowiedzi,
+          <strong>Wyniki gier</strong> - współrzędne geograficzne odpowiedzi,
           odległości od celu, punkty, czasy udzielenia odpowiedzi, znaczniki
           czasowe rund. Dane te są niezbędne do działania rankingu i statystyk.
         </li>
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
       <h2>3. Podstawa i cel przetwarzania</h2>
       <p>
         Dane przetwarzane są na podstawie art. 6 ust. 1 lit. b RODO (niezbędność
-        do wykonania umowy/usługi) — umożliwienie korzystania z gry,
+        do wykonania umowy/usługi) - umożliwienie korzystania z gry,
         przechowywanie wyników i prowadzenie rankingu. Nie przetwarzamy danych w
         celach marketingowych ani nie wysyłamy newslettera. Adres e-mail może
         zostać użyty wyłącznie do kontaktu w sprawie ewentualnych upominków lub
