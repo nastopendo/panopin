@@ -233,3 +233,27 @@
 .maplibregl-popup-content [data-edit-photo-id]:hover {
   opacity: 0.8;
 }
+
+/* One-time "drag to look around" hint: hand makes two strokes (right, then
+   back) over 1.2s — synced with the panorama's two-stroke swing. */
+@keyframes pano-hint-swipe {
+  0% {
+    transform: translateX(-6px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(14px) rotate(5deg);
+  }
+  100% {
+    transform: translateX(-6px) rotate(-4deg);
+  }
+}
+
+.animate-pano-hint-swipe {
+  animation: pano-hint-swipe 1.2s ease-in-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pano-hint-swipe {
+    animation: none;
+  }
+}

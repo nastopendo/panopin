@@ -12,7 +12,7 @@ export default function CookiesPage() {
     <article className="prose prose-sm prose-invert max-w-none">
       <h1>Polityka cookies</h1>
       <p className="lead text-muted-foreground">
-        Ostatnia aktualizacja: kwiecień 2026
+        Ostatnia aktualizacja: maj 2026
       </p>
 
       <h2>Czym są pliki cookies?</h2>
@@ -56,6 +56,17 @@ export default function CookiesPage() {
               <td className="py-3 pr-4">
                 Zapamiętuje, że zapoznałeś się z informacją o cookies, aby nie
                 wyświetlać jej ponownie.
+              </td>
+              <td className="py-3">Do wyczyszczenia localStorage</td>
+            </tr>
+            <tr>
+              <td className="py-3 pr-4 font-mono text-xs">
+                panopin-pano-hint-seen
+              </td>
+              <td className="py-3 pr-4">localStorage</td>
+              <td className="py-3 pr-4">
+                Zapamiętuje, że wyświetlono jednorazową wskazówkę o obracaniu
+                panoramy, aby nie pokazywać jej ponownie.
               </td>
               <td className="py-3">Do wyczyszczenia localStorage</td>
             </tr>

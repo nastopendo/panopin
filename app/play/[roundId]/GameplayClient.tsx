@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock,
+  Hand,
   Loader2,
   LogIn,
   Save,
@@ -26,6 +27,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
+import { isPanoHintSeen, markPanoHintSeen } from "@/lib/pano-hint";
+import type { Viewer as PsvViewer } from "@photo-sphere-viewer/core";
 
 const PanoramaViewer = dynamic(() => import("@/components/panorama/Viewer"), {
   ssr: false,
@@ -161,6 +164,8 @@ export default function GameplayClient({ guestCardTitle, guestCardDesc, guestCar
   const [timeLimitS, setTimeLimitS] = useState(30);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [showPanoHint, setShowPanoHint] = useState(false);
+  const [panoHintGesturing, setPanoHintGesturing] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -176,6 +181,10 @@ export default function GameplayClient({ guestCardTitle, guestCardDesc, guestCar
   >(null);
   // Guards against React 19 Strict Mode dev double-invoke of the load effect.
   const initRef = useRef(false);
+  // One-time "drag to look around" hint (first photo of the first-ever play).
+  const panoHintRanRef = useRef(false);
+  const panoViewerRef = useRef<PsvViewer | null>(null);
+  const panoHintCancelRef = useRef<(() => void) | null>(null);
 
   // Load tournament state + subscribe to live score updates
   useEffect(() => {
@@ -270,6 +279,13 @@ export default function GameplayClient({ guestCardTitle, guestCardDesc, guestCar
         setPhase("error");
       });
   }, [roundId]);
+
+  // Stop the hint loop once the player leaves the first photo (guess submitted,
+  // next step, or unmount) — it should never move a revealed/destroyed viewer.
+  useEffect(() => {
+    if (phase !== "playing" || step !== 0) panoHintCancelRef.current?.();
+    return () => panoHintCancelRef.current?.();
+  }, [phase, step]);
 
   // Warn the user before refresh/close/navigation while the round is in progress.
   useEffect(() => {
@@ -389,6 +405,59 @@ export default function GameplayClient({ guestCardTitle, guestCardDesc, guestCar
       setPhase("playing");
       stepStartRef.current = Date.now();
     }
+  }
+
+  // Permanently hides the hint and stops its loop + swing. Does NOT touch the
+  // round timer — it must keep counting down normally from the round start.
+  function dismissPanoHint() {
+    panoHintCancelRef.current?.();
+    panoViewerRef.current?.stopAnimation();
+    setShowPanoHint(false);
+    setPanoHintGesturing(false);
+  }
+
+  // Captures the PSV viewer; on the first-ever panorama, replays a subtle
+  // two-stroke swing (right → back) every 4s, in sync with the hand icon,
+  // until the user moves the panorama for the first time.
+  function handleViewerReady(viewer: PsvViewer) {
+    panoViewerRef.current = viewer;
+    if (panoHintRanRef.current || isPanoHintSeen()) return;
+    panoHintRanRef.current = true;
+    markPanoHintSeen();
+    setShowPanoHint(true);
+
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    panoHintCancelRef.current = () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+
+    viewer.addEventListener(
+      "ready",
+      () => {
+        const base = viewer.getPosition();
+        const delta = 0.09; // ≈5° — very subtle
+        const stroke = (yaw: number, speed: number) =>
+          cancelled
+            ? Promise.resolve()
+            : Promise.resolve(
+                viewer.animate({ yaw, pitch: base.pitch, speed }),
+              ).catch(() => {});
+
+        const playGesture = async () => {
+          if (cancelled) return;
+          setPanoHintGesturing(true);
+          await stroke(base.yaw + delta, 600); // movement 1 — to the right
+          await stroke(base.yaw, 600); //          movement 2 — back
+          if (!cancelled) setPanoHintGesturing(false);
+        };
+
+        // First gesture after 4s too (not immediately on panorama load).
+        intervalId = setInterval(playGesture, 4000);
+      },
+      { once: true },
+    );
   }
 
   const currentPhoto = photos[step];
@@ -656,13 +725,24 @@ export default function GameplayClient({ guestCardTitle, guestCardDesc, guestCar
       </div>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        <div className="flex-[3] relative min-h-0">
+        <div
+          className="flex-[3] relative min-h-0"
+          onPointerDownCapture={() => {
+            if (showPanoHint) dismissPanoHint();
+          }}
+        >
           {tilesManifest && (
             <PanoramaViewer
               key={tilesManifest.photoId}
               tilesManifest={tilesManifest}
+              onViewerReady={handleViewerReady}
               className="w-full h-full"
             />
+          )}
+          {showPanoHint && phase === "playing" && panoHintGesturing && (
+            <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none animate-in fade-in duration-200">
+              <Hand className="size-12 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] animate-pano-hint-swipe" />
+            </div>
           )}
           <div className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-2.5 py-1 text-xs text-muted-foreground border">
             <span className="font-medium text-foreground">{step + 1}</span>
